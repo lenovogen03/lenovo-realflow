@@ -31,6 +31,7 @@ import CPIWorkerSetupPage from "./pages/CPIWorkerSetupPage";
 import SystemHealthPage from "./pages/SystemHealthPage";
 import AdminLoginPage from "./pages/AdminLoginPage";
 import AdminDashboard from "./pages/AdminDashboard";
+import AnimationDemoPage from "./pages/AnimationDemoPage";
 import { Toaster } from "./components/ui/sonner";
 import { BrandingProvider } from "./context/BrandingContext";
 import { ThemeProvider } from "./context/ThemeContext";
@@ -94,6 +95,7 @@ function App() {
             <Route path="/forgot-password" element={<ForgotPasswordPage />} />
             <Route path="/reset-password" element={<ResetPasswordPage />} />
             <Route path="/admin" element={<AdminLoginPage />} />
+            <Route path="/animation-demo" element={<AnimationDemoPage />} />
             <Route path="/admin/dashboard" element={
               <AdminRoute>
                 <AdminDashboard />

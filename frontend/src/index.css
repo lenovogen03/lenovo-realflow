@@ -111,3 +111,57 @@
     background: linear-gradient(180deg, var(--brand-primary), var(--brand-accent));
   }
 }
+
+
+
+/* Animation Styles for Demo */
+@keyframes fadeScale {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes bounceZoom {
+  0% {
+    opacity: 0;
+    transform: scale(0.3) rotate(-10deg);
+  }
+  50% {
+    transform: scale(1.05) rotate(2deg);
+  }
+  70% {
+    transform: scale(0.95) rotate(-1deg);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(0);
+  }
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.animate-fadeScale {
+  animation: fadeScale 0.3s ease-out;
+}
+
+.animate-bounceZoom {
+  animation: bounceZoom 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+.animate-slideIn {
+  animation: slideIn 0.4s ease-out;
+}
