@@ -39,9 +39,9 @@ SCREENSHOT_QUALITY = 60         # JPEG quality for stream
 SCREENSHOT_TYPE = "jpeg"
 # Total time we allow for: playwright start + browser launch + new_context +
 # initial goto. Bad/slow proxies otherwise hang the recorder forever.
-STARTUP_TIMEOUT_S = 30          # user-confirmed: 30s balanced
+STARTUP_TIMEOUT_S = 45          # Increased to 45s for slow proxies
 LAUNCH_TIMEOUT_S = 15           # browser launch + context only
-GOTO_TIMEOUT_MS = 25_000        # initial page.goto budget
+GOTO_TIMEOUT_MS = 35_000        # Increased to 35s for initial page.goto with slow proxies
 
 # Persistent storage for finalized recordings
 SESSIONS_ROOT = Path(__file__).parent / "visual_recorder_sessions"
@@ -250,16 +250,35 @@ async def _init_browser_inner(sess: RecorderSession) -> None:
     )
     sess.page = await sess.context.new_page()
 
+    # Block font files to prevent font loading delays
+    # This prevents Playwright screenshot from hanging on fonts.ready
+    await sess.page.route("**/*.{woff,woff2,ttf,otf,eot}", lambda route: route.abort())
+
+    # Override document.fonts.ready to prevent screenshot hanging
+    # This must be done via page.add_init_script so it runs on every page load
+    await sess.page.add_init_script("""
+        Object.defineProperty(document.fonts, 'ready', {
+            get: () => Promise.resolve(),
+            configurable: true
+        });
+    """)
+
     # First steps in the recorded JSON
     sess.steps.append(_build_wait_load(60000))
     sess.steps.append(_build_wait(2000))
 
     # Navigate (best-effort — even if goto fails we keep the session
     # so the user can navigate manually via /navigate).
+    # Use networkidle for better compatibility with slow proxies
     try:
-        await sess.page.goto(sess.url, wait_until="domcontentloaded", timeout=GOTO_TIMEOUT_MS)
+        await sess.page.goto(sess.url, wait_until="networkidle", timeout=GOTO_TIMEOUT_MS)
     except Exception as e:
         logger.warning(f"Initial goto failed for {sess.session_id}: {e}")
+        # If networkidle fails, try with just domcontentloaded as fallback
+        try:
+            await sess.page.goto(sess.url, wait_until="domcontentloaded", timeout=GOTO_TIMEOUT_MS)
+        except Exception as e2:
+            logger.warning(f"Fallback goto also failed for {sess.session_id}: {e2}")
 
 
 async def _cleanup_handles(sess: RecorderSession) -> None:
@@ -339,7 +358,27 @@ async def take_screenshot(sess: RecorderSession) -> bytes:
         return b""
     async with sess.lock:
         try:
-            data = await sess.page.screenshot(type=SCREENSHOT_TYPE, quality=SCREENSHOT_QUALITY, full_page=False)
+            # Override fonts.ready immediately before screenshot
+            # This is more reliable than add_init_script for already-loaded pages
+            try:
+                await sess.page.evaluate("""
+                    Object.defineProperty(document.fonts, 'ready', {
+                        get: () => Promise.resolve(),
+                        configurable: true,
+                        writable: true
+                    });
+                """)
+            except Exception:
+                pass  # Ignore if already overridden or page not ready
+            
+            # Screenshot with reasonable timeout - fonts are now handled properly
+            data = await sess.page.screenshot(
+                type=SCREENSHOT_TYPE, 
+                quality=SCREENSHOT_QUALITY, 
+                full_page=False,
+                timeout=30000,  # 30s timeout - fonts no longer block
+                animations="disabled"
+            )
         except Exception as e:
             logger.warning(f"screenshot failed for {sess.session_id}: {e}")
             return b""

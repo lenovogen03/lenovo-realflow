@@ -619,7 +619,7 @@ export default function VisualRecorderPage() {
                   <div className="aspect-[412/914] w-full flex flex-col items-center justify-center text-zinc-400 text-sm gap-2" data-testid="vr-connecting-state">
                     <Loader2 className="w-8 h-8 animate-spin text-emerald-400" />
                     <div className="font-medium text-zinc-200">Connecting via {proxy ? "proxy" : "direct"}…</div>
-                    <div className="text-xs text-zinc-500">{connectElapsed}s elapsed · timeout 30s</div>
+                    <div className="text-xs text-zinc-500">{connectElapsed}s elapsed · timeout 45s</div>
                   </div>
                 ) : screenshotSrc ? (
                   <img
