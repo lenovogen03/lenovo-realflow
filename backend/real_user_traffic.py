@@ -936,7 +936,7 @@ async def run_real_user_traffic_job(
     rows: Optional[List[Dict[str, Any]]],
     skip_captcha: bool,
     duplicate_ip_set: Optional[set],
-    post_submit_wait: int = 6,
+    post_submit_wait: int = 3,  # Reduced from 6s to 3s for speed optimization
     automation_steps: Optional[List[Dict[str, Any]]] = None,
     self_heal: bool = True,
     state_match_enabled: bool = False,
@@ -1839,9 +1839,10 @@ async def run_real_user_traffic_job(
                     # NOTE: Wait for full networkidle BEFORE the screenshot
                     # so we capture the page in its truly-loaded state
                     # (one of the user's 4 explicit checkpoints).
+                    # Reduced timeout from 15s to 6s for speed optimization
                     try:
                         try:
-                            await page.wait_for_load_state("networkidle", timeout=15000)
+                            await page.wait_for_load_state("networkidle", timeout=6000)
                         except Exception:
                             pass
                         landing_shot = shots_dir / f"visit_{i+1:05d}_landing.png"
@@ -2233,15 +2234,17 @@ async def run_real_user_traffic_job(
                         # Wait until the final page has rendered something
                         # visible — without this we sometimes capture a
                         # blank intermediate frame between SPA redirects.
+                        # Reduced timeout from 12s to 4s for speed optimization
                         try:
                             await page.wait_for_load_state(
-                                "networkidle", timeout=12000,
+                                "networkidle", timeout=4000,
                             )
                         except Exception:
                             pass
                         # Poll for visible body content (>100 chars or
                         # img/svg present) — stop blank captures.
-                        for _shot_attempt in range(8):
+                        # Reduced attempts from 8 to 4 and sleep from 1s to 0.5s
+                        for _shot_attempt in range(4):
                             try:
                                 ok = await page.evaluate(
                                     """() => {
@@ -2254,9 +2257,9 @@ async def run_real_user_traffic_job(
                                     break
                             except Exception:
                                 pass
-                            await asyncio.sleep(1.0)
-                        # Tiny extra settle so animations finish
-                        await asyncio.sleep(1.2)
+                            await asyncio.sleep(0.5)
+                        # Reduced settle time from 1.2s to 0.3s for speed
+                        await asyncio.sleep(0.3)
                         await page.screenshot(path=str(shot_path), full_page=True)
                         entry["screenshot"] = shot_path.name
                         # Push its own live-activity step with the explicit
@@ -2375,8 +2378,9 @@ async def run_real_user_traffic_job(
         await _record(job_id, entry, report, report_lock, db)
 
     # Launch with concurrency + optional pacing
-    semaphore = asyncio.Semaphore(max(1, min(int(concurrency or 1), 20)))
-    conc = max(1, min(int(concurrency or 1), 20))
+    # Increased max concurrency from 20 to 50 for faster processing (100 conversions in 20 mins)
+    semaphore = asyncio.Semaphore(max(1, min(int(concurrency or 1), 50)))
+    conc = max(1, min(int(concurrency or 1), 50))
 
     async def worker(i: int, shared_browser: Browser):
         # Per-visit pacing: target time for this visit = i * delay_between
