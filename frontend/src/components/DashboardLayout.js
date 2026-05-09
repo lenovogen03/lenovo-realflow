@@ -226,16 +226,14 @@ export default function DashboardLayout({ children }) {
             return (
               <Link key={item.path} to={item.path}>
                 <div
-                  className={`flex items-center gap-3 px-3 py-2 rounded-md transition-colors`}
+                  className={`sidebar-item flex items-center gap-3 px-3 py-2 rounded-md ${isActive ? 'active' : ''}`}
                   style={{
                     backgroundColor: isActive ? 'var(--brand-primary)' : 'transparent',
                     color: isActive ? 'white' : 'var(--brand-muted)',
                   }}
-                  onMouseEnter={(e) => !isActive && (e.currentTarget.style.backgroundColor = 'var(--brand-card)')}
-                  onMouseLeave={(e) => !isActive && (e.currentTarget.style.backgroundColor = 'transparent')}
                   data-testid={`nav-${item.name.toLowerCase().replace(/\s+/g, '-')}`}
                 >
-                  <Icon size={20} />
+                  <Icon size={20} className="icon-hover" />
                   {sidebarOpen && <span className="text-sm font-medium">{item.name}</span>}
                 </div>
               </Link>
@@ -246,14 +244,14 @@ export default function DashboardLayout({ children }) {
 
       <div className="flex-1 flex flex-col overflow-hidden">
         <header 
-          className="h-16 flex items-center justify-between px-6"
+          className="h-16 flex items-center justify-between px-6 header-animated shadow-sm"
           style={{ 
             backgroundColor: 'var(--brand-background)', 
             borderBottom: '1px solid var(--brand-border)' 
           }}
         >
           <div className="flex items-center gap-4">
-            <h2 className="text-lg font-semibold" style={{ color: 'var(--brand-text)' }} data-testid="page-title">
+            <h2 className="text-lg font-semibold animate-fadeIn" style={{ color: 'var(--brand-text)' }} data-testid="page-title">
               {(() => {
                 for (const it of navigation) {
                   if (it.path === location.pathname) return it.name;
@@ -271,9 +269,9 @@ export default function DashboardLayout({ children }) {
             <ThemeToggle />
             <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="flex items-center gap-2" data-testid="user-menu">
+              <Button variant="ghost" className="flex items-center gap-2 btn-animated" data-testid="user-menu">
                 <div 
-                  className="w-8 h-8 rounded-full flex items-center justify-center"
+                  className="w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300 hover:scale-110 hover:rotate-12"
                   style={{ backgroundColor: 'var(--brand-primary)' }}
                 >
                   <User size={18} />
@@ -298,7 +296,7 @@ export default function DashboardLayout({ children }) {
           </div>
         </header>
 
-        <main className="flex-1 overflow-auto p-6" data-testid="main-content">
+        <main className="flex-1 overflow-auto p-6 content-wrapper" data-testid="main-content" style={{ backgroundColor: 'var(--brand-background)' }}>
           {children}
         </main>
       </div>
