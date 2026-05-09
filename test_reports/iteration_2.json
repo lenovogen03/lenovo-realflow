@@ -1,0 +1,41 @@
+{
+  "summary": "Backend-only verification of per-row consume + DEPLETED batch-survival contract on RealFlow uploads. Reference test (/app/tests/test_uploads_per_row_consume.py) re-run end-to-end: ALL 6 SCENARIOS PASS. New pytest suite (/app/backend/tests/test_uploads_depleted_contract.py) adds 9 contract / schema / idempotency / multipart / legacy-doc edge cases — ALL 9 PASS. The schema fields (original_item_count, consumed_count, available_count, depleted, depleted_at) are correctly populated by all 4 upload endpoints (proxies, user-agents, data-file multipart Excel, automation-json) and surfaced on GET /api/uploads. _consume_uploads correctly excludes automation_json, decrements item_count + increments consumed_count for proxies/UAs/data_file, marks depleted=true on full consume, deletes on-disk XLSX while keeping DB row, and is idempotent on repeat consume of same raws. Live-remove paths in real_user_traffic.py confirmed to use $pull + $set depleted=true instead of delete_one — code review verified.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "real_user_traffic.py::_live_remove_proxy / _live_remove_ua", "issue": "Cross-restart idempotency gap — these helpers rely on an in-memory set (_live_proxy_pulled / _live_ua_pulled) to skip duplicate calls. If the engine restarts mid-job and reprocesses the same row, the unconditional $inc {consumed_count:+1, item_count:-1} will fire even though $pull is a no-op (item already removed), pushing item_count negative and double-counting consumed_count. Recommend gating the $inc on res.modified_count returning a non-zero raw-pull, or using $pull-result inspection. _consume_uploads (the end-of-job hook) is already safe because it diffs items vs used_proxy_set."},
+      {"endpoint": "POST /api/uploads/automation-json", "issue": "Doc inserted without original_item_count / consumed_count / depleted keys explicitly set. _upload_doc_to_response does backfill these correctly so no contract break, but it's inconsistent with the other 3 endpoints. Minor — recommend setting them explicitly for parity."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_uploads_depleted_contract.py",
+    "/app/test_reports/pytest/depleted_contract.xml",
+    "/app/tests/test_uploads_per_row_consume.py"
+  ],
+  "action_items": [
+    "(Optional) Harden _live_remove_proxy / _live_remove_ua against cross-restart double-counting by checking the doc's pre-state before $inc, or by guarding $inc with a $pull-only-when-present semantics.",
+    "(Optional) Set original_item_count / consumed_count / depleted explicitly in the automation_json upload doc for symmetry with proxy/UA/data-file endpoints."
+  ],
+  "critical_code_review_comments": [
+    "_consume_uploads correctly handles all 3 mutable types and excludes automation_json — verified by direct invocation through the helper.",
+    "_upload_doc_to_response gracefully backfills original_item_count from item_count + consumed_count for legacy docs missing the field — verified by inserting a legacy-shaped doc directly into MongoDB.",
+    "data_file static path: when pending_rows == 0 the on-disk file is unlinked but the DB row is preserved with depleted=True, file_path=None, and consumed_count incremented by previous item_count — all assertions verified.",
+    "/app/backend/server.py is now ~11.4k lines — exceeds 700-line soft limit. Splitting into routers (auth/admin/uploads/rut) is overdue.",
+    "WARNING in backend logs: 'module bcrypt has no attribute __about__' — passlib/bcrypt version mismatch. Doesn't break auth (admin login still 200) but should be pinned. Not new in this PR."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_uploads_depleted_contract.py (NEW — 9 pytest cases)"
+  ],
+  "success_rate": {"backend": "100% (15/15: 6 reference + 9 new contract tests)", "frontend": "N/A (backend-only request)"},
+  "test_credentials": "Admin: admin@realflow.local / admin123 (env-configured). Test users were ephemeral, prefixed TEST_depletedctr_<ts>_<uuid>@example.com — auto-provisioned and feature-flagged via admin API.",
+  "seed_data_creation": "Each pytest run provisions one fresh TEST_depletedctr_* user with real_user_traffic + form_filler features. Uploads are not torn down at end of test — they are isolated in the per-user MongoDB database (realflow_user_<uid>) and don't pollute existing user data.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "The DEPLETED-batch-survival contract (per-row consume, JSON-template immunity, on-disk file cleanup) is fully working at the backend layer. New regression suite at /app/backend/tests/test_uploads_depleted_contract.py covers schema, idempotency, multipart Excel, legacy-doc backfill, and ISO timestamp format. Reference test at /app/tests/test_uploads_per_row_consume.py is the user's primary scenario suite — both should be re-run on any change to _consume_uploads or _upload_doc_to_response. gsheet-backed paths are NOT exercised (would require a real public Google Sheet) — flagged as a future test gap.",
+  "rca of the issue": "No bug to RCA — main agent's implementation passes all contract assertions. The only minor finding is the cross-restart idempotency gap in real_user_traffic.py::_live_remove_* (in-memory set lost on restart, $inc fires unconditionally). Repro: kill-restart the RUT engine while a job is running and let the new engine reprocess a row that was already pulled — item_count will go negative. Mitigation: replace the unconditional $inc with a read-modify-write that only increments when the $pull actually removed an item (e.g. compare items.length before/after, or use an atomic findOneAndUpdate with arrayFilters that only touches present items)."
+}

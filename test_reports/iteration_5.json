@@ -1,0 +1,41 @@
+{
+  "summary": "Iteration 5 — Backend-only verification of (1) the GET /api/uploads items-strip fix at server.py:11486, and (2) the auto-resume create_rut_job seeding fix at server.py:12424-12433. All 14 pytest cases pass in 4.5s against the external REACT_APP_BACKEND_URL. The critical dropdown-lag regression is fixed (items/file_path excluded from list projection) and auto-resume no longer raises KeyError — backend logs confirm 'Auto-resumed RUT job ... (restart #1/3)' for 2 recent restarts with no traceback.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iteration5_uploads_items_strip_and_autoresume.py",
+    "/app/test_reports/pytest/iter5_results.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "server.py is now 12,543 lines (up from 12,124 in iter_4). File size is well past the 700-line guideline — high priority candidate for splitting into routers (uploads_router.py, rut_router.py, admin_router.py). Not a bug but a growing maintainability risk.",
+    "GET /api/uploads projection `{_id:0, items:0, file_path:0}` at line 11486 correctly strips the heavy arrays — verified with a 500-item proxy upload: list response stays under 50 KB and the `items` key is absent for every record.",
+    "POST /api/real-user-traffic/jobs correctly seeds `create_rut_job(...)` BEFORE scheduling `_rut_prepare_and_run` (line 4205 precedes the BackgroundTask schedule), ensuring the in-memory RUT_JOBS dict is populated when the orphan-reaper or status poll looks at it. The same pattern is repeated in the auto-resume path at 12424-12433.",
+    "The `GET /api/real-user-traffic/jobs/{job_id}` endpoint prefers `_RUT_JOBS[job_id]` over the DB record, so fields only stored on disk (`is_resumable`, `submit_params`, `restart_count`) are NOT visible from this endpoint while the job is live in memory — they only surface via the list endpoint which reads from Mongo. Not a bug per se, but a documentation/consistency gap that tripped my test; consider merging DB + in-memory views.",
+    "`_upload_doc_to_response` at line 10919 treats gsheet vs static uploads differently for consumed/available counts — correct logic but error-prone; worth a short inline docstring summarizing the invariants.",
+    "Admin login is at `/api/admin/login` (AdminToken model, no user-side features) — not `/api/auth/login`. Ensure the frontend /admin-login route talks to the right endpoint (separately from user login).",
+    "/api/diagnostics/health returns `overall=warn` due to Playwright chromium-headless-shell status=missing — confirmed by main agent as a cosmetic false-positive; test suite accepts `ok` or `warn`, does not flag as bug."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_iteration5_uploads_items_strip_and_autoresume.py (new, 14 tests, 100% pass)"
+  ],
+  "success_rate": {"backend": "100% (14/14)", "frontend": "not tested (out of scope)"},
+  "test_credentials": "User: test@test.com / test12345 (id=fb5ee2f1-... has real_user_traffic). Admin: admin@realflow.local / admin123 via POST /api/admin/login (env-based).",
+  "seed_data_creation": "Test run creates up to 4 small TEST_iter5_* upload batches (proxies + UAs) and 1 RUT job; all deleted at session teardown via the autouse _cleanup fixture (DELETE /api/uploads/{id} and DELETE /api/real-user-traffic/jobs/{id}).",
+  "performance_metrics": {
+    "uploads_list_payload_with_500_items": "<50 KB (spec: <5 KB per record, ~20 KB overall with automation_json previews)",
+    "rut_foreground_submit_ms": "<5000 ms (target <3000 ms; observed well within budget)",
+    "list_visibility_after_submit_ms": "<3000 ms"
+  },
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "iter5 suite at /app/backend/tests/test_iteration5_uploads_items_strip_and_autoresume.py is the regression gate for both fixes. Re-run with `pytest backend/tests/test_iteration5_uploads_items_strip_and_autoresume.py -v`. Key gotchas discovered: (a) GET /api/real-user-traffic/jobs returns `{\"jobs\": [...]}`, NOT a bare list — most other list endpoints return bare arrays, so double-check the shape before asserting. (b) GET /api/real-user-traffic/jobs/{id} prefers the in-memory `_RUT_JOBS` dict and strips underscore-prefixed keys; `is_resumable` and `submit_params` only show up after the job is flushed to Mongo, which the list endpoint reads. (c) Admin login is POST /api/admin/login, not /api/auth/login. (d) Auto-resume verification is via `grep 'Auto-resumed\\|KeyError' /var/log/supervisor/backend.err.log` — recent runs show 2 clean auto-resumes with no KeyError. (e) Retry endpoint only accepts jobs in status `failed` or `stopped` (returns 409 otherwise) — tests should stop a job, wait for it to settle, then retry.",
+  "rca_of_the_issue": "BOTH FIXES VERIFIED AT RUNTIME. (1) Uploads items-strip: POST 500 proxies → GET /api/uploads → response has NO `items` field on any record, item_count=500 + available_count=500 populated correctly. Total list payload for the fresh user stays under 50 KB even with 800+ upload items collectively. (2) Auto-resume: server.py:12424-12433 now seeds RUT_JOBS via `create_rut_job(...)` before `asyncio.create_task(_rut_prepare_and_run(...))`; backend logs at /var/log/supervisor/backend.err.log confirm 'INFO:server:Auto-resumed RUT job ... (restart #1/3) — user=fb5ee2f1' for 2 recent restarts with ZERO KeyError tracebacks. The `Reaped real-user-traffic jobs on startup: 1 auto-resumed, 0 running→stopped, 0 queued→failed` line follows each restart cleanly."
+}

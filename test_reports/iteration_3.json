@@ -1,0 +1,41 @@
+{
+  "summary": "Backend-only smoke test for RealFlow re-clone. Wrote /app/backend/tests/test_iteration3_backend_smoke.py (15 tests across auth sanity, admin auth, user register/login, admin user mgmt, protected endpoints, and CPI smoke). All 15 tests pass against the EXTERNAL REACT_APP_BACKEND_URL. No backend source code was modified.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "/api/admin/users/{id}/approve", "issue": "Not implemented as a dedicated route. The review_request expected POST /approve and PUT /features sub-routes, but actual implementation uses a single PUT /api/admin/users/{id} with {status, features} body. Tests were adapted; no code fix needed, but admin-UI docs/tests that expect /approve and /features sub-paths will 404."},
+      {"endpoint": "/api/settings", "issue": "No generic /api/settings endpoint exists. Only /api/user/notification-settings, /api/ai-settings, /api/admin/email-settings, /api/admin/api-settings. Test now uses /api/user/notification-settings which returns 200."},
+      {"endpoint": "/api/auth/register", "issue": "Pydantic model UserCreate requires field 'name' (not 'full_name' as described in review_request). Returns 422 if 'full_name' is sent. Low severity — client just needs to use the correct key."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iteration3_backend_smoke.py",
+    "/app/test_reports/pytest/iter3_results.xml"
+  ],
+  "action_items": [
+    "Optional: add convenience routes POST /api/admin/users/{id}/approve and PUT /api/admin/users/{id}/features if external clients / docs reference them. Current UI likely uses PUT /api/admin/users/{id} directly so this is only a nice-to-have.",
+    "Optional: expose a canonical /api/settings alias (or document that settings live under /api/user/notification-settings and /api/ai-settings).",
+    "Doc nit: test_credentials / review_request say register takes 'full_name', but backend expects 'name'. Align docs."
+  ],
+  "critical_code_review_comments": [
+    "server.py is 11,951 lines — far above the 700-line guideline. Strongly recommend splitting auth, admin, links, uploads, cpi, rut modules into separate routers (cpi_module.py already exists as a good pattern).",
+    "Admin auth is purely env-based (ADMIN_EMAIL/ADMIN_PASSWORD) with no DB record or audit trail — acceptable for single-admin self-hosted, but should be flagged if multi-admin / RBAC is ever needed.",
+    "UserFeatures uses model_config=extra='allow' which is pragmatic but means typos in feature keys silently pass through. Consider adding a known-keys validator or enum.",
+    "Protected endpoint error messages leak the admin email ('Contact admin at admin@realflow.local') — fine for self-hosted but would be a minor info-disclosure in SaaS."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_iteration3_backend_smoke.py (new)"
+  ],
+  "success_rate": {"backend": "100%", "frontend": "not tested (out of scope)"},
+  "test_credentials": "Admin: admin@realflow.local / admin123 (env). Fresh user created per-run: tester+<rand>@realflow.local / Test12345! — approved + granted (links, real_traffic, real_user_traffic, cpi, import_traffic, settings).",
+  "seed_data_creation": "Each pytest run creates one new user (email tester+<6char>@realflow.local) and, via CPI smartlink test, one smartlink named TEST_sl_<6char>. No teardown — safe for a self-hosted dev pod but admin should purge periodically if running many iterations.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Key gotchas discovered: (1) register expects key 'name', NOT 'full_name' (422 otherwise). (2) There are NO /approve or /features sub-routes — admin approves + assigns features via a single PUT /api/admin/users/{id} with body {status, features:{...}}. (3) There is no /api/settings; use /api/user/notification-settings. (4) /api/uploads requires the user to have real_user_traffic OR cpi feature, not just active status. (5) /api/cpi/* requires status=active (feature flag 'cpi' not checked at router level for dashboard/smartlinks, but auth requires active). Test file is at /app/backend/tests/test_iteration3_backend_smoke.py and can be re-run with `pytest /app/backend/tests/test_iteration3_backend_smoke.py -v`.",
+  "rca of the issue": "No bugs found. All 15 smoke cases green. Previous 'failures' during early test iterations were due to mismatched expectations in the review_request (wrong field name 'full_name', non-existent /approve and /features sub-routes, non-existent /api/settings) — the backend itself is healthy."
+}

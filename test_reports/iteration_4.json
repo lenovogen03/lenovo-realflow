@@ -1,0 +1,42 @@
+{
+  "summary": "Iteration 4 — Backend-only verification of the RUT async-submit refactor (fast foreground POST + heavy prep moved to BackgroundTasks). All 26 pytest cases passed in 5.4s against the external REACT_APP_BACKEND_URL. The race-condition the user reported on realflow.online ('Network aborted twice + recovery poll failed') is fixed: the job DB record is now inserted IMMEDIATELY (status=queued, preparing=true) before the BG prep task runs, so recovery polling always finds the job.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iteration4_rut_async_submit.py",
+    "/app/test_reports/pytest/iter4_results.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "server.py is now 12,124 lines — even larger than iter_3 (was 11,951). The new _rut_prepare_and_run helper (~290 lines) is well-structured but should ideally live in a dedicated rut_router.py module alongside the other RUT endpoints. Maintainability concern, not a bug.",
+    "Foreground endpoint correctly returns ~100ms; in-memory RUT_JOBS dict + DB upsert happen synchronously before scheduling BackgroundTasks — good ordering, recovery polling will always find the job.",
+    "_DUP_IP_CACHE_LOCK (asyncio.Lock at line 3738) correctly prevents a thundering-herd against Mongo when N concurrent jobs trigger cache rebuild. Good defensive design.",
+    "BackgroundTasks runs AFTER the response is sent — confirmed working. _rut_prepare_and_run wraps everything in try/except + _mark_failed so a prep crash never leaves the job stuck in 'queued' forever.",
+    "Validation order is correct: link 404 → numeric 400 → file-read 400 → paste-emptiness 400 → DB insert. All foreground 400s observed <2s in tests (typically <500ms).",
+    "file_bytes is read before BG task is scheduled (UploadFile handles can't outlive the request) — correctly handled at lines 4160-4173.",
+    "On bad upload_proxy_id, the BG task flips status='failed' with error_message='Selected proxy upload is empty or not found' within ~3s — verified end-to-end."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_iteration4_rut_async_submit.py (new — 26 tests)"
+  ],
+  "success_rate": {"backend": "100% (26/26)", "frontend": "not tested (out of scope)"},
+  "test_credentials": "Admin: admin@realflow.local / admin123 (env). Per-run user: test_iter4_<rand>@realflow.local / Test12345! — registered + activated with features {real_user_traffic, real_traffic, links, clicks, import_traffic, settings, form_filler}. User auto-deleted in TestCleanup.",
+  "seed_data_creation": "Each pytest run creates one fresh user + one link, all cleaned up at the end of the run via TestCleanup. Job records are deleted explicitly via the DELETE endpoint. No long-lived test pollution.",
+  "performance_metrics": {
+    "fast_foreground_submit_ms": "~118ms (spec required <3000ms)",
+    "5_parallel_submits_wall_clock_ms": "~525ms (spec required <5000ms)",
+    "list_visibility_after_submit": "<1s (spec required <2s)",
+    "bg_failure_flip_time": "~1-3s (spec required ~3s)"
+  },
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "RUT submit refactor is fully working. Key learnings: (1) The foreground endpoint at server.py line 4049 inserts the DB row at line 4205 (before BackgroundTasks.add_task at line 4248), so recovery polling will always find the job — this is the fix. (2) Validation order matters: link_id 404 happens BEFORE paste-emptiness 400, so don't expect 400 for missing-proxies if link_id is also wrong (you'll get 404). (3) Foreground response includes proxies/user_agents counts ONLY for paste-mode; upload-mode counts get filled by the BG task asynchronously — the foreground returns 0 for upload counts which is by design. (4) `total` in response is total_clicks for clicks-mode; for conversions-mode it's max_attempts or target_conversions*20. (5) Test file at /app/backend/tests/test_iteration4_rut_async_submit.py — re-run with `pytest backend/tests/test_iteration4_rut_async_submit.py -v`.",
+  "rca of the issue": "ROOT CAUSE (from user report): The pre-fix POST /api/real-user-traffic/jobs did all of (a) gsheet HTTP fetches, (b) potentially MB-sized Excel parsing, (c) entire-database dup-IP cache rebuild, (d) target-screenshot pHash calculation SYNCHRONOUSLY before inserting the job row in MongoDB. On Cloudflare-tunneled production with slow uploads, the request frequently exceeded the user's HTTP timeout. The frontend's recovery polling (which lists /jobs and looks for the just-submitted job_id) then found NOTHING because the DB row was never written → 'job DID NOT start' toast. FIX VERIFIED: server.py now (1) does only fast validation in foreground, (2) drains UploadFile bytes (instant — body is already in memory), (3) inserts the job row with status=queued + preparing=true at line 4205, (4) schedules `_rut_prepare_and_run` as a BackgroundTask, (5) returns within ~100ms. Heavy prep runs after response. On any prep failure, the BG task calls _mark_failed which updates DB status='failed' + error_message, surfaced via the existing job-detail poll. Concurrency stress (5 parallel) completes in ~525ms wall-clock with all 5 distinct job_ids visible in /jobs <1s later — the user's 'concurrent jobs working smoothly' requirement is met."
+}
