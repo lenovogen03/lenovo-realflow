@@ -84,18 +84,21 @@ export default function Dashboard() {
   }));
 
   return (
-    <div className="space-y-6" data-testid="dashboard">
+    <div className="space-y-6 page-enter" data-testid="dashboard">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {statCards.map((stat, index) => {
           const Icon = stat.icon;
           return (
-            <Card key={index} className="stat-card bg-[var(--brand-card)] border-[var(--brand-border)]" data-testid={stat.testid}>
+            <Card key={index} 
+                  className="stat-card-hover card-themed animate-fadeIn" 
+                  style={{ animationDelay: `${index * 0.1}s`, animationFillMode: 'both' }}
+                  data-testid={stat.testid}>
               <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
+                <CardTitle className="text-sm font-medium text-muted-themed">
                   {stat.title}
                 </CardTitle>
                 <div
-                  className="w-10 h-10 rounded-md flex items-center justify-center"
+                  className="w-10 h-10 rounded-md flex items-center justify-center transition-transform duration-300 hover:scale-110"
                   style={{ backgroundColor: `${stat.color}20` }}
                 >
                   <Icon size={20} style={{ color: stat.color }} />
@@ -120,22 +123,22 @@ export default function Dashboard() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card className="bg-[var(--brand-card)] border-[var(--brand-border)]" data-testid="clicks-chart">
+        <Card className="card-hover card-themed animate-fadeIn" style={{ animationDelay: '0.5s', animationFillMode: 'both' }} data-testid="clicks-chart">
           <CardHeader>
-            <CardTitle className="text-lg">Clicks Over Time</CardTitle>
+            <CardTitle className="text-lg text-themed">Clicks Over Time</CardTitle>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
               <LineChart data={stats.clicks_by_date}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#27272A" />
-                <XAxis dataKey="date" stroke="#A1A1AA" style={{ fontSize: 12 }} />
-                <YAxis stroke="#A1A1AA" style={{ fontSize: 12 }} />
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--brand-border)" />
+                <XAxis dataKey="date" stroke="var(--brand-muted)" style={{ fontSize: 12 }} />
+                <YAxis stroke="var(--brand-muted)" style={{ fontSize: 12 }} />
                 <Tooltip
                   contentStyle={{
-                    backgroundColor: '#18181B',
-                    border: '1px solid #27272A',
+                    backgroundColor: 'var(--brand-card)',
+                    border: '1px solid var(--brand-border)',
                     borderRadius: '6px',
-                    color: '#FAFAFA'
+                    color: 'var(--brand-text)'
                   }}
                 />
                 <Line type="monotone" dataKey="count" stroke="#3B82F6" strokeWidth={2} dot={{ fill: '#3B82F6' }} />
@@ -144,22 +147,22 @@ export default function Dashboard() {
           </CardContent>
         </Card>
 
-        <Card className="bg-[var(--brand-card)] border-[var(--brand-border)]" data-testid="revenue-chart">
+        <Card className="card-hover card-themed animate-fadeIn" style={{ animationDelay: '0.6s', animationFillMode: 'both' }} data-testid="revenue-chart">
           <CardHeader>
-            <CardTitle className="text-lg">Revenue Over Time</CardTitle>
+            <CardTitle className="text-lg text-themed">Revenue Over Time</CardTitle>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
               <LineChart data={stats.revenue_by_date}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#27272A" />
-                <XAxis dataKey="date" stroke="#A1A1AA" style={{ fontSize: 12 }} />
-                <YAxis stroke="#A1A1AA" style={{ fontSize: 12 }} />
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--brand-border)" />
+                <XAxis dataKey="date" stroke="var(--brand-muted)" style={{ fontSize: 12 }} />
+                <YAxis stroke="var(--brand-muted)" style={{ fontSize: 12 }} />
                 <Tooltip
                   contentStyle={{
-                    backgroundColor: '#18181B',
-                    border: '1px solid #27272A',
+                    backgroundColor: 'var(--brand-card)',
+                    border: '1px solid var(--brand-border)',
                     borderRadius: '6px',
-                    color: '#FAFAFA'
+                    color: 'var(--brand-text)'
                   }}
                 />
                 <Line type="monotone" dataKey="revenue" stroke="#22C55E" strokeWidth={2} dot={{ fill: '#22C55E' }} />
@@ -170,22 +173,22 @@ export default function Dashboard() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card className="bg-[var(--brand-card)] border-[var(--brand-border)]" data-testid="country-chart">
+        <Card className="card-hover card-themed animate-fadeIn" style={{ animationDelay: '0.7s', animationFillMode: 'both' }} data-testid="country-chart">
           <CardHeader>
-            <CardTitle className="text-lg">Top Countries</CardTitle>
+            <CardTitle className="text-lg text-themed">Top Countries</CardTitle>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={stats.clicks_by_country}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#27272A" />
-                <XAxis dataKey="country" stroke="#A1A1AA" style={{ fontSize: 12 }} />
-                <YAxis stroke="#A1A1AA" style={{ fontSize: 12 }} />
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--brand-border)" />
+                <XAxis dataKey="country" stroke="var(--brand-muted)" style={{ fontSize: 12 }} />
+                <YAxis stroke="var(--brand-muted)" style={{ fontSize: 12 }} />
                 <Tooltip
                   contentStyle={{
-                    backgroundColor: '#18181B',
-                    border: '1px solid #27272A',
+                    backgroundColor: 'var(--brand-card)',
+                    border: '1px solid var(--brand-border)',
                     borderRadius: '6px',
-                    color: '#FAFAFA'
+                    color: 'var(--brand-text)'
                   }}
                 />
                 <Bar dataKey="count" fill="#3B82F6" />
@@ -194,9 +197,9 @@ export default function Dashboard() {
           </CardContent>
         </Card>
 
-        <Card className="bg-[var(--brand-card)] border-[var(--brand-border)]" data-testid="device-chart">
+        <Card className="card-hover card-themed animate-fadeIn" style={{ animationDelay: '0.8s', animationFillMode: 'both' }} data-testid="device-chart">
           <CardHeader>
-            <CardTitle className="text-lg">Device Breakdown</CardTitle>
+            <CardTitle className="text-lg text-themed">Device Breakdown</CardTitle>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
@@ -217,10 +220,10 @@ export default function Dashboard() {
                 </Pie>
                 <Tooltip
                   contentStyle={{
-                    backgroundColor: '#18181B',
-                    border: '1px solid #27272A',
+                    backgroundColor: 'var(--brand-card)',
+                    border: '1px solid var(--brand-border)',
                     borderRadius: '6px',
-                    color: '#FAFAFA'
+                    color: 'var(--brand-text)'
                   }}
                 />
               </PieChart>
