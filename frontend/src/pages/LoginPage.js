@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import axios from "axios";
 import { Button } from "../components/ui/button";
@@ -21,6 +21,24 @@ export default function LoginPage() {
   const [loginForm, setLoginForm] = useState({ email: "", password: "" });
   const [registerForm, setRegisterForm] = useState({ email: "", password: "", name: "" });
   const [loading, setLoading] = useState(false);
+  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+  const backgroundRef = useRef(null);
+
+  // Cursor following effect
+  useEffect(() => {
+    const handleMouseMove = (e) => {
+      if (backgroundRef.current) {
+        const rect = backgroundRef.current.getBoundingClientRect();
+        setMousePosition({
+          x: ((e.clientX - rect.left) / rect.width) * 100,
+          y: ((e.clientY - rect.top) / rect.height) * 100,
+        });
+      }
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    return () => window.removeEventListener('mousemove', handleMouseMove);
+  }, []);
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -68,7 +86,8 @@ export default function LoginPage() {
 
   return (
     <div
-      className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden"
+      ref={backgroundRef}
+      className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden transition-all duration-300"
       style={
         branding.login_bg_url
           ? {
@@ -77,45 +96,61 @@ export default function LoginPage() {
               backgroundPosition: 'center',
             }
           : {
-              backgroundColor: 'var(--brand-background)',
-              backgroundImage:
-                'radial-gradient(circle at 20% 10%, color-mix(in srgb, var(--brand-primary) 14%, transparent), transparent 55%), ' +
-                'radial-gradient(circle at 85% 90%, color-mix(in srgb, var(--brand-accent) 12%, transparent), transparent 55%)',
+              background: `
+                radial-gradient(circle at ${mousePosition.x}% ${mousePosition.y}%, rgba(16, 185, 129, 0.15), transparent 40%),
+                radial-gradient(circle at 20% 10%, rgba(16, 185, 129, 0.12), transparent 50%),
+                radial-gradient(circle at 85% 90%, rgba(139, 92, 246, 0.10), transparent 50%),
+                linear-gradient(135deg, #0a0a0b 0%, #18181b 100%)
+              `,
             }
       }
     >
+      {/* Animated floating orbs */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl animate-float-slow"></div>
+        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl animate-float-slower"></div>
+        <div className="absolute top-1/2 right-1/3 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl animate-float"></div>
+      </div>
+
       {/* Soft overlay only if a custom image background is set */}
       {branding.login_bg_url && (
         <div className="absolute inset-0 bg-black/60"></div>
       )}
+      
       <div className="absolute top-4 right-4 z-20">
         <ThemeToggle />
       </div>
-      <div className="relative z-10 w-full max-w-md">
-        <div className="text-center mb-8">
+      
+      <div className="relative z-10 w-full max-w-md animate-slideUp">
+        <div className="text-center mb-8 animate-fadeIn">
           {branding.logo_url ? (
-            <img src={branding.logo_url} alt={branding.app_name} className="h-16 mx-auto mb-4 object-contain" />
+            <img src={branding.logo_url} alt={branding.app_name} className="h-16 mx-auto mb-4 object-contain animate-scaleIn" />
           ) : (
-            <h1 className="text-4xl font-bold mb-2" style={{ color: 'var(--brand-text)' }} data-testid="app-title">{branding.app_name || "RealFlow"}</h1>
+            <h1 className="text-4xl font-bold mb-2 animate-scaleIn" style={{ color: 'var(--brand-text)' }} data-testid="app-title">{branding.app_name || "RealFlow"}</h1>
           )}
           <p style={{ color: 'var(--brand-muted)' }}>{branding.tagline || "Real Users. Real Results."}</p>
         </div>
 
-        <Card className="backdrop-blur-sm" style={{ backgroundColor: 'color-mix(in srgb, var(--brand-card) 90%, transparent)', borderColor: 'var(--brand-border)' }}>
-          <CardHeader>
+        <Card className="backdrop-blur-xl shadow-2xl border-2 hover:border-emerald-500/50 transition-all duration-500 animate-slideUp" 
+              style={{ 
+                backgroundColor: 'color-mix(in srgb, var(--brand-card) 85%, transparent)', 
+                borderColor: 'var(--brand-border)',
+                animation: 'slideUp 0.6s ease-out, glow 3s ease-in-out infinite'
+              }}>
+          <CardHeader className="animate-fadeIn">
             <CardTitle style={{ color: 'var(--brand-text)' }}>Welcome</CardTitle>
             <CardDescription>Sign in to your account or create a new one</CardDescription>
           </CardHeader>
           <CardContent>
             <Tabs defaultValue="login" className="w-full">
-              <TabsList className="grid w-full grid-cols-2 mb-6">
-                <TabsTrigger value="login" data-testid="login-tab">Login</TabsTrigger>
-                <TabsTrigger value="register" data-testid="register-tab">Register</TabsTrigger>
+              <TabsList className="grid w-full grid-cols-2 mb-6 bg-zinc-900/50">
+                <TabsTrigger value="login" data-testid="login-tab" className="transition-all duration-300 data-[state=active]:bg-emerald-600 data-[state=active]:scale-105">Login</TabsTrigger>
+                <TabsTrigger value="register" data-testid="register-tab" className="transition-all duration-300 data-[state=active]:bg-emerald-600 data-[state=active]:scale-105">Register</TabsTrigger>
               </TabsList>
 
               <TabsContent value="login">
                 <form onSubmit={handleLogin} className="space-y-4">
-                  <div className="space-y-2">
+                  <div className="space-y-2 animate-fadeIn" style={{ animationDelay: '0.1s', animationFillMode: 'both' }}>
                     <Label htmlFor="login-email">Email</Label>
                     <Input
                       id="login-email"
@@ -125,10 +160,11 @@ export default function LoginPage() {
                       value={loginForm.email}
                       onChange={(e) => setLoginForm({ ...loginForm, email: e.target.value })}
                       required
+                      className="transition-all duration-300 focus:scale-105 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/50"
                       style={{ backgroundColor: 'var(--brand-card)', borderColor: 'var(--brand-border)' }}
                     />
                   </div>
-                  <div className="space-y-2">
+                  <div className="space-y-2 animate-fadeIn" style={{ animationDelay: '0.2s', animationFillMode: 'both' }}>
                     <Label htmlFor="login-password">Password</Label>
                     <div className="relative">
                       <Input
@@ -139,13 +175,13 @@ export default function LoginPage() {
                         value={loginForm.password}
                         onChange={(e) => setLoginForm({ ...loginForm, password: e.target.value })}
                         required
-                        className="pr-10"
+                        className="pr-10 transition-all duration-300 focus:scale-105 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/50"
                         style={{ backgroundColor: 'var(--brand-card)', borderColor: 'var(--brand-border)' }}
                       />
                       <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 hover:opacity-80"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 hover:opacity-80 hover:scale-110 transition-all duration-200"
                         style={{ color: 'var(--brand-muted)' }}
                       >
                         {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
@@ -155,9 +191,9 @@ export default function LoginPage() {
                   <Button
                     type="submit"
                     data-testid="login-submit-button"
-                    className="w-full"
+                    className="w-full bg-gradient-to-r from-emerald-600 to-green-500 hover:from-emerald-500 hover:to-green-400 hover:scale-105 active:scale-95 transition-all duration-300 shadow-lg hover:shadow-emerald-500/50 animate-fadeIn"
                     disabled={loading}
-                    style={{ backgroundColor: 'var(--brand-primary)' }}
+                    style={{ animationDelay: '0.3s', animationFillMode: 'both' }}
                   >
                     {loading ? "Logging in..." : "Login"}
                   </Button>
@@ -175,7 +211,7 @@ export default function LoginPage() {
 
               <TabsContent value="register">
                 <form onSubmit={handleRegister} className="space-y-4">
-                  <div className="space-y-2">
+                  <div className="space-y-2 animate-fadeIn" style={{ animationDelay: '0.1s', animationFillMode: 'both' }}>
                     <Label htmlFor="register-name">Name</Label>
                     <Input
                       id="register-name"
@@ -185,10 +221,11 @@ export default function LoginPage() {
                       value={registerForm.name}
                       onChange={(e) => setRegisterForm({ ...registerForm, name: e.target.value })}
                       required
+                      className="transition-all duration-300 focus:scale-105 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/50"
                       style={{ backgroundColor: 'var(--brand-card)', borderColor: 'var(--brand-border)' }}
                     />
                   </div>
-                  <div className="space-y-2">
+                  <div className="space-y-2 animate-fadeIn" style={{ animationDelay: '0.2s', animationFillMode: 'both' }}>
                     <Label htmlFor="register-email">Email</Label>
                     <Input
                       id="register-email"
@@ -198,10 +235,11 @@ export default function LoginPage() {
                       value={registerForm.email}
                       onChange={(e) => setRegisterForm({ ...registerForm, email: e.target.value })}
                       required
+                      className="transition-all duration-300 focus:scale-105 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/50"
                       style={{ backgroundColor: 'var(--brand-card)', borderColor: 'var(--brand-border)' }}
                     />
                   </div>
-                  <div className="space-y-2">
+                  <div className="space-y-2 animate-fadeIn" style={{ animationDelay: '0.3s', animationFillMode: 'both' }}>
                     <Label htmlFor="register-password">Password</Label>
                     <div className="relative">
                       <Input
@@ -212,13 +250,13 @@ export default function LoginPage() {
                         value={registerForm.password}
                         onChange={(e) => setRegisterForm({ ...registerForm, password: e.target.value })}
                         required
-                        className="pr-10"
+                        className="pr-10 transition-all duration-300 focus:scale-105 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/50"
                         style={{ backgroundColor: 'var(--brand-card)', borderColor: 'var(--brand-border)' }}
                       />
                       <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 hover:opacity-80"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 hover:opacity-80 hover:scale-110 transition-all duration-200"
                         style={{ color: 'var(--brand-muted)' }}
                       >
                         {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
@@ -228,9 +266,9 @@ export default function LoginPage() {
                   <Button
                     type="submit"
                     data-testid="register-submit-button"
-                    className="w-full"
+                    className="w-full bg-gradient-to-r from-purple-600 to-pink-500 hover:from-purple-500 hover:to-pink-400 hover:scale-105 active:scale-95 transition-all duration-300 shadow-lg hover:shadow-purple-500/50 animate-fadeIn"
                     disabled={loading}
-                    style={{ backgroundColor: 'var(--brand-primary)' }}
+                    style={{ animationDelay: '0.4s', animationFillMode: 'both' }}
                   >
                     {loading ? "Creating account..." : "Create Account"}
                   </Button>
