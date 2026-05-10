@@ -11,7 +11,7 @@ import ThemeToggle from "../components/ThemeToggle";
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
-// Wavy lines animation component
+// Wavy lines animation component - Smooth cursor-following waves
 const WavyBackground = ({ mousePosition }) => {
   const canvasRef = useRef(null);
 
@@ -20,18 +20,26 @@ const WavyBackground = ({ mousePosition }) => {
     if (!canvas) return;
     
     const ctx = canvas.getContext('2d');
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
+    const setCanvasSize = () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    };
+    setCanvasSize();
+    window.addEventListener('resize', setCanvasSize);
 
+    // Create more waves for denser pattern
     const waves = [];
-    const waveCount = 15;
+    const waveCount = 25; // Increased for more lines
     
     for (let i = 0; i < waveCount; i++) {
       waves.push({
-        y: (canvas.height / waveCount) * i,
-        amplitude: Math.random() * 40 + 20,
-        frequency: Math.random() * 0.01 + 0.005,
-        offset: Math.random() * Math.PI * 2,
+        baseY: (canvas.height / waveCount) * i,
+        amplitude: 30 + Math.random() * 20,
+        frequency: 0.002 + Math.random() * 0.001,
+        speed: 0.3 + Math.random() * 0.2,
+        phase: Math.random() * Math.PI * 2,
+        currentMouseInfluence: 0,
+        targetMouseInfluence: 0
       });
     }
 
@@ -40,20 +48,37 @@ const WavyBackground = ({ mousePosition }) => {
 
     const animate = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      time += 0.02;
+      time += 0.01;
 
-      waves.forEach((wave) => {
+      waves.forEach((wave, index) => {
+        // Smooth cursor influence with easing
+        const distanceY = Math.abs(wave.baseY - mousePosition.y);
+        const distanceX = Math.abs(canvas.width / 2 - mousePosition.x);
+        const totalDistance = Math.sqrt(distanceY * distanceY + distanceX * distanceX);
+        
+        // Calculate target influence based on distance
+        wave.targetMouseInfluence = Math.max(0, (300 - totalDistance) / 300);
+        
+        // Smooth transition (easing)
+        wave.currentMouseInfluence += (wave.targetMouseInfluence - wave.currentMouseInfluence) * 0.1;
+
         ctx.beginPath();
-        ctx.strokeStyle = 'rgba(79, 127, 255, 0.3)';
-        ctx.lineWidth = 1;
+        // Varying opacity based on position for depth
+        const opacity = 0.15 + (index % 3) * 0.05;
+        ctx.strokeStyle = `rgba(79, 127, 255, ${opacity})`;
+        ctx.lineWidth = 0.8;
 
-        for (let x = 0; x < canvas.width; x += 5) {
-          const distanceFromMouse = Math.abs(x - mousePosition.x) + Math.abs(wave.y - mousePosition.y);
-          const influence = Math.max(0, 200 - distanceFromMouse) / 200;
+        // Draw smooth wavy line
+        for (let x = 0; x <= canvas.width; x += 3) {
+          // Multiple sine waves for organic feel
+          const baseWave = Math.sin(x * wave.frequency + time * wave.speed + wave.phase) * wave.amplitude;
+          const secondaryWave = Math.sin(x * wave.frequency * 1.5 + time * wave.speed * 0.7) * (wave.amplitude * 0.3);
           
-          const y = wave.y + 
-            Math.sin(x * wave.frequency + time + wave.offset) * wave.amplitude +
-            influence * 50;
+          // Cursor influence - pulls waves toward cursor
+          const xInfluence = ((mousePosition.x - x) / canvas.width) * 100 * wave.currentMouseInfluence;
+          const yInfluence = ((mousePosition.y - wave.baseY) / canvas.height) * 80 * wave.currentMouseInfluence;
+          
+          const y = wave.baseY + baseWave + secondaryWave + yInfluence + xInfluence * 0.3;
           
           if (x === 0) {
             ctx.moveTo(x, y);
@@ -70,7 +95,10 @@ const WavyBackground = ({ mousePosition }) => {
 
     animate();
 
-    return () => cancelAnimationFrame(animationFrameId);
+    return () => {
+      cancelAnimationFrame(animationFrameId);
+      window.removeEventListener('resize', setCanvasSize);
+    };
   }, [mousePosition]);
 
   return (
