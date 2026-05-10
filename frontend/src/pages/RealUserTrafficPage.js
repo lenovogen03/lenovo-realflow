@@ -1598,16 +1598,19 @@ export default function RealUserTrafficPage() {
               </>
             )}
             <div>
-              <Label className="text-zinc-300 text-sm">Concurrency (1–20)</Label>
+              <Label className="text-zinc-300 text-sm">Concurrency (1–50) ⚡</Label>
               <Input
                 data-testid="rut-concurrency"
                 type="number"
                 min={1}
-                max={20}
+                max={50}
                 value={concurrency}
-                onChange={(e) => setConcurrency(Math.max(1, Math.min(20, Number(e.target.value) || 1)))}
+                onChange={(e) => setConcurrency(Math.max(1, Math.min(50, Number(e.target.value) || 1)))}
                 className="mt-1 bg-zinc-800 border-zinc-700 text-zinc-100"
               />
+              <p className="text-xs text-gray-500 mt-1">
+                Recommended: 20-30 (safe) | 40-50 (ultra speed)
+              </p>
             </div>
           </div>
 
