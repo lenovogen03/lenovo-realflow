@@ -2362,6 +2362,9 @@ async def run_real_user_traffic_job(
                     pass
 
                 await context.close()
+                # Force garbage collection after each visit to prevent memory buildup
+                import gc
+                gc.collect()
         except Exception as e:
             entry["status"] = "failed"
             entry["error"] = f"{type(e).__name__}: {str(e)[:180]}"
@@ -2369,11 +2372,14 @@ async def run_real_user_traffic_job(
             # Browser is shared across visits — we only close the per-visit
             # context here. The shared browser is closed by the parent job
             # once ALL workers have finished.
+            # Aggressive cleanup to prevent memory leaks
             if context is not None:
                 try:
                     await context.close()
                 except Exception:
                     pass
+            # Small delay to let cleanup complete
+            await asyncio.sleep(0.1)
 
         await _record(job_id, entry, report, report_lock, db)
 
@@ -2557,8 +2563,14 @@ async def run_real_user_traffic_job(
     try:
         if final_browser is not None:
             await final_browser.close()
+            logger.info(f"Job {job_id}: Shared browser closed successfully")
     except Exception as e:
         logger.debug(f"shared browser close failed: {e}")
+    
+    # Force cleanup
+    import gc
+    gc.collect()
+    
     # Use holder's pw_cm if present (in case _get_live_browser created a
     # new one after the original pw_cm was discarded).
     final_pw_cm = _browser_holder.get("pw_cm") or pw_cm
