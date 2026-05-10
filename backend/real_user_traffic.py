@@ -2378,9 +2378,12 @@ async def run_real_user_traffic_job(
         await _record(job_id, entry, report, report_lock, db)
 
     # Launch with concurrency + optional pacing
-    # Increased max concurrency from 20 to 50 for faster processing (100 conversions in 20 mins)
+    # Extreme speed mode: Max 50 concurrent workers for ultra-fast processing
+    # Can handle 100 conversions in 15-20 minutes with proper resources
     semaphore = asyncio.Semaphore(max(1, min(int(concurrency or 1), 50)))
     conc = max(1, min(int(concurrency or 1), 50))
+    
+    logger.info(f"RUT Speed Mode: {conc} concurrent workers enabled for max performance")
 
     async def worker(i: int, shared_browser: Browser):
         # Per-visit pacing: target time for this visit = i * delay_between
