@@ -1,0 +1,39 @@
+{
+  "summary": "Iteration 8 — Backend-only verification of (a) concurrency boundary 1..50 (was 20), (b) _consume_uploads physical row deletion + depleted=true with DB entry preserved, (c) overall backend health (auth, dashboard, links/clicks/conversions/proxies/uploads listing, RUT jobs list + engine status), (d) frontend SPA smoke /login. 16/16 pytest cases pass in 4.86s.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "(general)", "issue": "Benign passlib bcrypt warning 'module bcrypt has no attribute __about__' floods logs — does not affect login/hashing but pollutes /var/log/supervisor/backend.err.log. Pin bcrypt<4 or upgrade passlib to silence."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iteration8_concurrency_and_consume.py",
+    "/app/test_reports/pytest/iter8_results.xml"
+  ],
+  "action_items": [
+    "Review-request used incorrect endpoint names: '/api/rut/jobs' and '/api/uploaded-resources' do NOT exist in server.py — actual routes are '/api/real-user-traffic/jobs' and '/api/uploads'. Update the source PRD/docs so future testers don't waste a cycle.",
+    "(Optional) Pin bcrypt<4.0 in requirements.txt to suppress passlib version-read warning at every login."
+  ],
+  "critical_code_review_comments": [
+    "server.py is now ~13,626 lines — split is overdue. Uploads routes (~/uploads/*, lines 11290-11990) form a self-contained ~700 LOC chunk that could move to uploads_router.py. Same for RUT (~4348-5232) and Visual Recorder (already flagged in iter7).",
+    "_consume_uploads (server.py:12209) iterates per-upload synchronously inside the request task. For a multi-upload RUT job (proxies + UAs + data_file batches) each `update_one` is a sequential round-trip — could be parallelised with asyncio.gather for ~3x speedup at job completion. Low priority since job completion isn't latency-sensitive.",
+    "real_user_traffic.py memory-leak fix (gc.collect() + browser cleanup) cannot be exercised at the API level without real proxies + a 50-job run. Verified the engine-status endpoint stays 200 and module imports clean (no SyntaxError after gc.collect additions); main agent should self-validate the actual leak behaviour with live proxies in staging using `top -p $(pgrep -f real_user_traffic)` watching RSS over 30+ minutes.",
+    "Concurrency cap is enforced ONLY at /api/real-user-traffic/jobs (Form-based, line 4445) and /api/traffic/send-real (line 8464 via max(1, min(..., 50))). The two paths use different validation styles (HTTPException 400 vs silent clamp). Recommend unifying — silent-clamp hides invalid input from the user.",
+    "Test suite runs against shared `vrtest@test.local` account; data_file/proxy uploads created by tests are cleaned up but the user's /api/uploads list will accumulate TEST_iter8_* names if any test fails before its DELETE. Consider a session-scoped teardown that GETs /api/uploads?type=proxies and DELETEs everything matching the TEST_iter8_ prefix."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_iteration8_concurrency_and_consume.py (new, 16 tests, 100% pass, 4.86s)"
+  ],
+  "success_rate": {"backend": "100% (16/16 iter8)", "frontend": "smoke only — /login returns 200 HTML"},
+  "test_credentials": "User: vrtest@test.local / TestPass2026! (active, features.real_user_traffic=true). Token via POST /api/auth/login.",
+  "seed_data_creation": "Each test creates 1-3 ephemeral uploads (proxies type) tagged TEST_iter8_*, plus one TEST_iter8_link_* link per concurrency test. The two _consume_uploads tests DELETE the upload after assertions; concurrency tests do not delete the link (small leak, harmless).",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "iter8 suite at /app/backend/tests/test_iteration8_concurrency_and_consume.py covers: auth/login token shape, dashboard stats, list-endpoints (/api/links /api/clicks /api/conversions /api/proxies /api/uploads /api/real-user-traffic/jobs /api/real-user-traffic/engine-status), RUT concurrency boundary (0=fail, 1=ok, 50=ok, 51=fail), _consume_uploads partial+full deletion with depleted-flag verification, and frontend /login SPA smoke. Run: `cd /app/backend && pytest tests/test_iteration8_concurrency_and_consume.py -v`. Notes: (a) Tests use shared_loop fixture so motor's IOLoop binding stays valid across the two _consume_uploads tests — DO NOT switch to asyncio.run per test or the 2nd will fail with 'Event loop is closed'. (b) Concurrency=50 may return either 200/201 (job queued) or 4xx for non-concurrency reasons (e.g. invalid proxy probe at runtime); the test only fails if the response *mentions concurrency*. (c) BASE_URL falls back to reading /app/frontend/.env directly — pytest doesn't inherit shell env in the test runner. (d) The previous review request mistakenly referenced '/api/rut/jobs' and '/api/uploaded-resources'; actual paths are '/api/real-user-traffic/jobs' and '/api/uploads'. (e) Memory-leak fix in real_user_traffic.py (gc.collect, browser close) is a runtime-behaviour change that cannot be unit-tested at the API layer without live proxies and a long-running concurrent run; main agent should validate via `ps -o pid,rss,cmd` over time in staging.",
+  "rca_of_the_issue": "ALL CHANGES VERIFIED AT THE API/CONTRACT LAYER. (1) Concurrency=50 boundary now passes Pydantic/Form validation at /api/real-user-traffic/jobs (server.py:4445 reads 'concurrency must be 1..50'); concurrency=51 returns HTTP 400 with that detail message — confirmed at runtime. (2) _consume_uploads physical row deletion confirmed: after creating a 2-item proxy upload and calling the helper with both raws, GET /api/uploads?type=proxies returns the same id with item_count=0, depleted=true, depleted_at populated, consumed_count>=2, and the doc still exists (DB entry preserved as documented in the function's docstring lines 12217-12235). Partial consume (1 of 3) leaves item_count=2, depleted=false, consumed_count=1. (3) Memory-leak runtime fix cannot be asserted from API surface — requires live multi-proxy concurrent run; the engine-status endpoint stays 200 and the module imports cleanly post-gc.collect addition, so the change is non-breaking. No backend startup errors in /var/log/supervisor/backend.err.log apart from a long-standing benign passlib/bcrypt version-read warning."
+}

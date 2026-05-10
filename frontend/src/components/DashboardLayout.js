@@ -1,10 +1,12 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { LayoutDashboard, Link2, MousePointerClick, DollarSign, Server, Menu, LogOut, User, Settings, TrendingUp, Upload, Mail, Filter, Smartphone, Search, ClipboardCheck, Fingerprint, Package, Apple, Cpu, Briefcase, ChevronDown, ChevronRight, Link as LinkIcon, Activity, Camera } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "./ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "./ui/dropdown-menu";
 import { useBranding } from "../context/BrandingContext";
 import ThemeToggle from "./ThemeToggle";
+import WavyBackground from "./WavyBackground";
 import axios from "axios";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
@@ -133,30 +135,34 @@ export default function DashboardLayout({ children }) {
   };
 
   return (
-    <div className="flex h-screen" style={{ backgroundColor: 'var(--brand-background)' }}>
+    <div className="flex h-screen relative overflow-hidden" style={{ backgroundColor: '#000000' }}>
+      {/* Cursor-following wavy lines background — sits behind everything */}
+      <WavyBackground intensity={0.6} lineCount={120} zIndex={0} />
+
       <aside
         className={`${
           sidebarOpen ? "w-64" : "w-20"
-        } sidebar-brand transition-all duration-300 flex flex-col`}
-        style={{ 
-          backgroundColor: 'var(--brand-background)', 
-          borderRight: '1px solid var(--brand-border)' 
+        } sidebar-themed transition-all duration-300 flex flex-col relative z-10`}
+        style={{
+          background: 'linear-gradient(180deg, rgba(0,0,0,0.85) 0%, rgba(10,10,20,0.85) 100%)',
+          backdropFilter: 'blur(16px)',
+          borderRight: '1px solid rgba(79, 127, 255, 0.2)',
         }}
         data-testid="sidebar"
       >
-        <div className="p-6 flex items-center justify-between" style={{ borderBottom: '1px solid var(--brand-border)' }}>
+        <div className="p-6 flex items-center justify-between" style={{ borderBottom: '1px solid rgba(79, 127, 255, 0.2)' }}>
           {sidebarOpen && (
             branding.logo_url ? (
               <img src={branding.logo_url} alt={branding.app_name} className="h-8 object-contain" data-testid="app-logo" />
             ) : (
-              <h1 className="text-xl font-bold" style={{ color: 'var(--brand-text)' }} data-testid="app-logo">{branding.app_name || "RealFlow"}</h1>
+              <h1 className="text-xl font-bold bg-gradient-to-r from-white to-[#4F7FFF] bg-clip-text text-transparent" data-testid="app-logo">{branding.app_name || "RealFlow"}</h1>
             )
           )}
           <Button
             variant="ghost"
             size="icon"
             onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="hover:opacity-80"
+            className="hover:bg-[#4F7FFF]/10 text-white"
             style={{ backgroundColor: 'transparent' }}
             data-testid="sidebar-toggle"
           >
@@ -175,14 +181,27 @@ export default function DashboardLayout({ children }) {
                 <div key={item.name}>
                   <button
                     type="button"
-                    className="w-full flex items-center gap-3 px-3 py-2 rounded-md transition-colors"
+                    className="w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-300"
                     style={{
-                      backgroundColor: anyChildActive ? 'var(--brand-card)' : 'transparent',
-                      color: 'var(--brand-muted)',
+                      background: anyChildActive
+                        ? 'linear-gradient(90deg, rgba(79,127,255,0.25) 0%, transparent 100%)'
+                        : 'transparent',
+                      color: anyChildActive ? '#FFFFFF' : '#A0A0A0',
+                      borderLeft: anyChildActive ? '3px solid #4F7FFF' : '3px solid transparent',
                     }}
                     onClick={() => setCpiGroupOpen(!cpiGroupOpen)}
-                    onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'var(--brand-card)')}
-                    onMouseLeave={(e) => !anyChildActive && (e.currentTarget.style.backgroundColor = 'transparent')}
+                    onMouseEnter={(e) => {
+                      if (!anyChildActive) {
+                        e.currentTarget.style.background = 'linear-gradient(90deg, rgba(79,127,255,0.15) 0%, transparent 100%)';
+                        e.currentTarget.style.color = '#FFFFFF';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!anyChildActive) {
+                        e.currentTarget.style.background = 'transparent';
+                        e.currentTarget.style.color = '#A0A0A0';
+                      }
+                    }}
                     data-testid={`nav-group-${item.name.toLowerCase().replace(/\s+/g, '-')}`}
                   >
                     <Icon size={20} />
@@ -194,20 +213,33 @@ export default function DashboardLayout({ children }) {
                     )}
                   </button>
                   {sidebarOpen && expanded && (
-                    <div className="ml-3 mt-1 space-y-1 border-l pl-3" style={{ borderColor: 'var(--brand-border)' }}>
+                    <div className="ml-3 mt-1 space-y-1 border-l pl-3" style={{ borderColor: 'rgba(79, 127, 255, 0.25)' }}>
                       {item.children.map((c) => {
                         const isActive = location.pathname === c.path;
                         const CIcon = c.icon;
                         return (
                           <Link key={c.path} to={c.path}>
                             <div
-                              className="flex items-center gap-2 px-2 py-1.5 rounded-md transition-colors text-xs"
+                              className="flex items-center gap-2 px-2 py-1.5 rounded-md transition-all duration-300 text-xs"
                               style={{
-                                backgroundColor: isActive ? 'var(--brand-primary)' : 'transparent',
-                                color: isActive ? 'white' : 'var(--brand-muted)',
+                                background: isActive
+                                  ? 'linear-gradient(90deg, #4F7FFF 0%, #3D66D9 100%)'
+                                  : 'transparent',
+                                color: isActive ? '#FFFFFF' : '#A0A0A0',
+                                boxShadow: isActive ? '0 4px 14px rgba(79,127,255,0.4)' : 'none',
                               }}
-                              onMouseEnter={(e) => !isActive && (e.currentTarget.style.backgroundColor = 'var(--brand-card)')}
-                              onMouseLeave={(e) => !isActive && (e.currentTarget.style.backgroundColor = 'transparent')}
+                              onMouseEnter={(e) => {
+                                if (!isActive) {
+                                  e.currentTarget.style.background = 'rgba(79,127,255,0.1)';
+                                  e.currentTarget.style.color = '#FFFFFF';
+                                }
+                              }}
+                              onMouseLeave={(e) => {
+                                if (!isActive) {
+                                  e.currentTarget.style.background = 'transparent';
+                                  e.currentTarget.style.color = '#A0A0A0';
+                                }
+                              }}
                               data-testid={`nav-${c.name.toLowerCase().replace(/\s+/g, '-')}`}
                             >
                               <CIcon size={14} />
@@ -225,33 +257,51 @@ export default function DashboardLayout({ children }) {
             const isActive = location.pathname === item.path;
             return (
               <Link key={item.path} to={item.path}>
-                <div
-                  className={`sidebar-item flex items-center gap-3 px-3 py-2 rounded-md ${isActive ? 'active' : ''}`}
+                <motion.div
+                  whileHover={{ x: 4 }}
+                  className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-300`}
                   style={{
-                    backgroundColor: isActive ? 'var(--brand-primary)' : 'transparent',
-                    color: isActive ? 'white' : 'var(--brand-muted)',
+                    background: isActive
+                      ? 'linear-gradient(90deg, #4F7FFF 0%, #3D66D9 100%)'
+                      : 'transparent',
+                    color: isActive ? '#FFFFFF' : '#A0A0A0',
+                    boxShadow: isActive ? '0 4px 14px rgba(79,127,255,0.4)' : 'none',
+                    borderLeft: isActive ? '3px solid #6B95FF' : '3px solid transparent',
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!isActive) {
+                      e.currentTarget.style.background = 'linear-gradient(90deg, rgba(79,127,255,0.15) 0%, transparent 100%)';
+                      e.currentTarget.style.color = '#FFFFFF';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isActive) {
+                      e.currentTarget.style.background = 'transparent';
+                      e.currentTarget.style.color = '#A0A0A0';
+                    }
                   }}
                   data-testid={`nav-${item.name.toLowerCase().replace(/\s+/g, '-')}`}
                 >
-                  <Icon size={20} className="icon-hover" />
+                  <Icon size={20} />
                   {sidebarOpen && <span className="text-sm font-medium">{item.name}</span>}
-                </div>
+                </motion.div>
               </Link>
             );
           })}
         </nav>
       </aside>
 
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <header 
-          className="h-16 flex items-center justify-between px-6 header-animated shadow-sm"
-          style={{ 
-            backgroundColor: 'var(--brand-background)', 
-            borderBottom: '1px solid var(--brand-border)' 
+      <div className="flex-1 flex flex-col overflow-hidden relative z-10">
+        <header
+          className="h-16 flex items-center justify-between px-6"
+          style={{
+            background: 'rgba(0, 0, 0, 0.55)',
+            backdropFilter: 'blur(16px)',
+            borderBottom: '1px solid rgba(79, 127, 255, 0.2)',
           }}
         >
           <div className="flex items-center gap-4">
-            <h2 className="text-lg font-semibold animate-fadeIn" style={{ color: 'var(--brand-text)' }} data-testid="page-title">
+            <h2 className="text-lg font-semibold text-white" data-testid="page-title">
               {(() => {
                 for (const it of navigation) {
                   if (it.path === location.pathname) return it.name;
@@ -269,25 +319,25 @@ export default function DashboardLayout({ children }) {
             <ThemeToggle />
             <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="flex items-center gap-2 btn-animated" data-testid="user-menu">
-                <div 
-                  className="w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300 hover:scale-110 hover:rotate-12"
-                  style={{ backgroundColor: 'var(--brand-primary)' }}
+              <Button variant="ghost" className="flex items-center gap-2 text-white hover:bg-[#4F7FFF]/10" data-testid="user-menu">
+                <div
+                  className="w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300 hover:scale-110"
+                  style={{ background: 'linear-gradient(135deg, #4F7FFF 0%, #3D66D9 100%)', boxShadow: '0 4px 14px rgba(79,127,255,0.4)' }}
                 >
                   <User size={18} />
                 </div>
                 <span className="text-sm">{user.name || "User"}</span>
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48">
+            <DropdownMenuContent align="end" className="w-48 bg-black/95 border-[#4F7FFF]/30 text-white backdrop-blur-xl">
               {!isSubUser && (
-                <DropdownMenuItem onClick={() => navigate("/settings")} data-testid="settings-button">
+                <DropdownMenuItem onClick={() => navigate("/settings")} data-testid="settings-button" className="hover:bg-[#4F7FFF]/20 focus:bg-[#4F7FFF]/20">
                   <Settings size={16} className="mr-2" />
                   Settings
                 </DropdownMenuItem>
               )}
-              {!isSubUser && <DropdownMenuSeparator />}
-              <DropdownMenuItem onClick={handleLogout} data-testid="logout-button">
+              {!isSubUser && <DropdownMenuSeparator className="bg-[#4F7FFF]/20" />}
+              <DropdownMenuItem onClick={handleLogout} data-testid="logout-button" className="hover:bg-[#4F7FFF]/20 focus:bg-[#4F7FFF]/20">
                 <LogOut size={16} className="mr-2" />
                 Logout
               </DropdownMenuItem>
@@ -296,8 +346,18 @@ export default function DashboardLayout({ children }) {
           </div>
         </header>
 
-        <main className="flex-1 overflow-auto p-6 content-wrapper" data-testid="main-content" style={{ backgroundColor: 'var(--brand-background)' }}>
-          {children}
+        <main className="flex-1 overflow-auto p-6" data-testid="main-content" style={{ backgroundColor: 'transparent' }}>
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={location.pathname}
+              initial={{ opacity: 0, y: 12, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -8, scale: 1.02 }}
+              transition={{ duration: 0.35, ease: [0.43, 0.13, 0.23, 0.96] }}
+            >
+              {children}
+            </motion.div>
+          </AnimatePresence>
         </main>
       </div>
     </div>

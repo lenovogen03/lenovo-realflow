@@ -7,12 +7,15 @@ import { toast } from "sonner";
 import { Eye, EyeOff, Shield } from "lucide-react";
 import { useBranding } from "../context/BrandingContext";
 import ThemeToggle from "../components/ThemeToggle";
+import WavyBackground from "../components/WavyBackground";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
-// Vertical flowing lines - Only animate near cursor (Spotlight Effect)
-const WavyBackground = ({ mousePosition }) => {
+// Legacy local wave canvas — kept only so existing JSX below doesn't break
+// when the rest of the file still references <WavyBackgroundLegacy />.
+// Swap-in path: we now use the shared `WavyBackground` component above.
+const WavyBackgroundLegacy = ({ mousePosition }) => {
   const canvasRef = useRef(null);
 
   useEffect(() => {
@@ -179,7 +182,7 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen relative overflow-hidden bg-black">
-      <WavyBackground mousePosition={mousePosition} />
+      <WavyBackground />
       
       <div className="absolute top-4 right-4 z-20">
         <ThemeToggle />
