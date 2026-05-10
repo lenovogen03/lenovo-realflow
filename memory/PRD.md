@@ -37,6 +37,14 @@ User asked to clone the GitHub repo `https://github.com/lenovogen03/lenovo-realf
   - Bulk RUT speed: shared+relaunch Chromium args extended (`--disable-extensions`, `--disable-background-networking`, `--no-first-run`, `--mute-audio`, etc.). NetworkIdle waits reduced 20s→6s + 10s→4s
   - Test credentials seeded: `vrtest@test.local / TestPass2026!` with `real_user_traffic=true`
 - Tests: `/app/backend/tests/test_iteration7_visual_recorder_async.py` (12/12 ✅)
+- **Feb 10 2026 (current fork)** — Global Black + Bright Blue cursor-wave theme + RUT concurrency 50 + memory cleanup
+  - Created `/app/frontend/src/components/WavyBackground.js` — reusable cursor-following vertical wave canvas (`#4F7FFF` lines on pure-black, spotlight reveal near cursor, 120 lines × intensity prop). Used by `LoginPage` AND globally inside `DashboardLayout` so EVERY internal page (Links, Clicks, RUT, Visual Recorder, Uploaded Things, Proxies, Settings, etc.) inherits the animated background without per-page changes.
+  - `DashboardLayout.js` — full theme rewrite: pure-black root, glassmorphism sidebar (`backdrop-blur:16px`, `rgba(0,0,0,0.85)` gradient), gradient logo (white→#4F7FFF), `#4F7FFF` active-nav highlight with shadow + left border, framer-motion `AnimatePresence` wrapping `<main>` so every route change zoom-fades, blue-tinted dropdown menu and avatar.
+  - `ThemeContext.js` `dark` preset updated → `background_color:#000000`, `primary_color:#4F7FFF`, `accent_color:#6B95FF`, `border_color:rgba(79,127,255,0.2)` so all shadcn cards/inputs auto-inherit the new palette across every page.
+  - `real_user_traffic.py` — `gc.collect()` + explicit `browser.close()` per-job cleanup (memory-leak fix for parallel jobs); concurrency hard-cap raised 20→50.
+  - `server.py` — `/api/real-user-traffic/jobs` Pydantic/Form validation now `1..50`; `/api/traffic/send-real` clamp updated.
+  - `_consume_uploads` (`server.py:12209`) verified to **physically remove** consumed proxy/UA rows from `items[]` and replace data_file on disk with `pending_leads.xlsx`; DB doc preserved with `depleted=true` on full consumption (audit trail).
+  - Tests: `/app/backend/tests/test_iteration8_concurrency_and_consume.py` (16/16 ✅) — covers concurrency 0/1/50/51 boundaries, partial+full `_consume_uploads` row deletion with depleted-flag verification, auth/dashboard/list endpoints.
 
 ## Known Limitations
 - Bad proxy → state may still go to `ready` because Chromium launch succeeds even if proxy never delivers a page. User sees a chrome-error preview rather than a hard error. Acceptable for now.

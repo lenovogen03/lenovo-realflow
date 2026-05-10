@@ -677,3 +677,98 @@ body.blue-theme {
 
   animation: slideIn 0.4s ease-out;
 }
+
+
+
+/* ============================================
+   GLOBAL THEME OVERRIDE — Black + Bright Blue
+   Targets hard-coded zinc/gray Tailwind classes
+   used across legacy pages (RUT, Visual Recorder,
+   Uploaded Things, Settings, etc.) so every card
+   matches the new glassmorphism + blue theme.
+   ============================================ */
+
+/* Card / surface backgrounds → glassmorphism black */
+[data-testid="main-content"] .bg-zinc-900,
+[data-testid="main-content"] .bg-zinc-900\/60,
+[data-testid="main-content"] .bg-zinc-900\/40,
+[data-testid="main-content"] .bg-zinc-950,
+[data-testid="main-content"] .bg-zinc-950\/60,
+[data-testid="main-content"] .bg-zinc-950\/40,
+[data-testid="main-content"] .bg-neutral-900,
+[data-testid="main-content"] .bg-gray-900,
+[data-testid="main-content"] .bg-slate-900 {
+  background-color: rgba(0, 0, 0, 0.45) !important;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+/* Inner / elevated surfaces (inputs, sub-cards) */
+[data-testid="main-content"] .bg-zinc-800,
+[data-testid="main-content"] .bg-zinc-800\/60,
+[data-testid="main-content"] .bg-zinc-800\/40,
+[data-testid="main-content"] .bg-neutral-800,
+[data-testid="main-content"] .bg-gray-800,
+[data-testid="main-content"] .bg-slate-800 {
+  background-color: rgba(15, 20, 35, 0.6) !important;
+}
+
+/* Borders → blue-tinted instead of grey */
+[data-testid="main-content"] .border-zinc-700,
+[data-testid="main-content"] .border-zinc-800,
+[data-testid="main-content"] .border-zinc-900,
+[data-testid="main-content"] .border-neutral-700,
+[data-testid="main-content"] .border-neutral-800,
+[data-testid="main-content"] .border-gray-700,
+[data-testid="main-content"] .border-gray-800,
+[data-testid="main-content"] .border-slate-700,
+[data-testid="main-content"] .border-slate-800 {
+  border-color: rgba(79, 127, 255, 0.22) !important;
+}
+
+/* Divide colors (e.g. divide-zinc-800) */
+[data-testid="main-content"] .divide-zinc-800 > :not([hidden]) ~ :not([hidden]),
+[data-testid="main-content"] .divide-zinc-700 > :not([hidden]) ~ :not([hidden]) {
+  border-color: rgba(79, 127, 255, 0.18) !important;
+}
+
+/* Hover variants stay subtly highlighted */
+[data-testid="main-content"] .hover\:border-zinc-600:hover,
+[data-testid="main-content"] .hover\:border-zinc-500:hover {
+  border-color: rgba(79, 127, 255, 0.55) !important;
+}
+
+/* Generic shadcn Card root inside the dashboard becomes glass */
+[data-testid="main-content"] [class*="rounded-xl"][class*="border"][class*="bg-card"],
+[data-testid="main-content"] [class*="rounded-2xl"][class*="border"][class*="bg-card"] {
+  background-color: rgba(0, 0, 0, 0.45) !important;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-color: rgba(79, 127, 255, 0.22) !important;
+}
+
+/* Inputs / selects / textareas — keep readable on black */
+[data-testid="main-content"] input.bg-zinc-800,
+[data-testid="main-content"] textarea.bg-zinc-800,
+[data-testid="main-content"] select.bg-zinc-800,
+[data-testid="main-content"] input.bg-zinc-900,
+[data-testid="main-content"] textarea.bg-zinc-900,
+[data-testid="main-content"] select.bg-zinc-900 {
+  background-color: rgba(0, 0, 0, 0.55) !important;
+  border-color: rgba(79, 127, 255, 0.25) !important;
+  color: #FFFFFF !important;
+}
+
+[data-testid="main-content"] input.bg-zinc-800:focus,
+[data-testid="main-content"] textarea.bg-zinc-800:focus,
+[data-testid="main-content"] select.bg-zinc-800:focus {
+  border-color: rgba(79, 127, 255, 0.7) !important;
+  box-shadow: 0 0 0 2px rgba(79, 127, 255, 0.25);
+  outline: none;
+}
+
+/* Text colors — keep grey-300/400 readable but pull faint ones up */
+[data-testid="main-content"] .text-zinc-300,
+[data-testid="main-content"] .text-zinc-400 {
+  color: #B8C2D6 !important;
+}
