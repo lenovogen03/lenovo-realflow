@@ -644,8 +644,14 @@ export default function UploadedThingsPage() {
                     <div className="flex flex-wrap gap-1.5 mt-1.5">
                       {u.os_tag && <TagBadge>OS · {u.os_tag}</TagBadge>}
                       {u.network_tag && <TagBadge color="emerald">App · {u.network_tag}</TagBadge>}
-                      <TagBadge>{u.item_count} UAs</TagBadge>
-                      <ConsumptionPill u={u} unit="user-agents" />
+                      <TagBadge>
+                        {(u.available_count || u.item_count || 0).toLocaleString()} available
+                      </TagBadge>
+                      {u.consumed_count > 0 && (
+                        <TagBadge color="yellow">
+                          {u.consumed_count.toLocaleString()} used
+                        </TagBadge>
+                      )}
                     </div>
                     <GSheetLinkBlock u={u} onSynced={() => fetchUploads({ silent: true })} />
                     <div className="text-xs text-zinc-500 mt-1">
@@ -821,8 +827,14 @@ export default function UploadedThingsPage() {
                     <div className="flex flex-wrap gap-1.5 mt-1.5">
                       {u.country_tag && <TagBadge>{u.country_tag}</TagBadge>}
                       {u.state_tag && <TagBadge color="emerald">State · {u.state_tag}</TagBadge>}
-                      <TagBadge>{u.item_count} proxies</TagBadge>
-                      <ConsumptionPill u={u} unit="proxies" />
+                      <TagBadge>
+                        {(u.available_count || u.item_count || 0).toLocaleString()} available
+                      </TagBadge>
+                      {u.consumed_count > 0 && (
+                        <TagBadge color="yellow">
+                          {u.consumed_count.toLocaleString()} used
+                        </TagBadge>
+                      )}
                     </div>
                     <GSheetLinkBlock u={u} onSynced={() => fetchUploads({ silent: true })} />
                     <div className="text-xs text-zinc-500 mt-1">
@@ -986,8 +998,14 @@ export default function UploadedThingsPage() {
                     </div>
                     <div className="flex flex-wrap gap-1.5 mt-1.5">
                       {u.file_name && <TagBadge>{u.file_name}</TagBadge>}
-                      <TagBadge color="emerald">{u.item_count} rows</TagBadge>
-                      <ConsumptionPill u={u} unit="rows" />
+                      <TagBadge color="emerald">
+                        {(u.available_count || u.item_count || 0).toLocaleString()} available
+                      </TagBadge>
+                      {u.consumed_count > 0 && (
+                        <TagBadge color="yellow">
+                          {u.consumed_count.toLocaleString()} used
+                        </TagBadge>
+                      )}
                     </div>
                     <GSheetLinkBlock u={u} onSynced={() => fetchUploads({ silent: true })} />
                     <div className="text-xs text-zinc-500 mt-1">
