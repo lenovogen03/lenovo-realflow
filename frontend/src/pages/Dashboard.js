@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
-import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
+import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { MousePointerClick, TrendingUp, DollarSign, Users } from "lucide-react";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
@@ -52,27 +52,35 @@ export default function Dashboard() {
     {
       title: "Total Clicks",
       value: stats.total_clicks.toLocaleString(),
+      change: `+${stats.clicks_change}% from last month`,
+      changeColor: "#22C55E",
       icon: MousePointerClick,
-      color: "#3B82F6",
-      testid: "stat-total-clicks"
-    },
-    {
-      title: "Unique Clicks",
-      value: stats.unique_clicks.toLocaleString(),
-      icon: Users,
-      color: "#22C55E",
-      testid: "stat-unique-clicks"
+      color: "#4F7FFF",
+      testid: "stat-clicks"
     },
     {
       title: "Conversions",
       value: stats.total_conversions.toLocaleString(),
+      change: `${stats.conversion_rate}% conversion rate`,
+      changeColor: "#22C55E",
       icon: TrendingUp,
-      color: "#F59E0B",
+      color: "#3D66D9",
       testid: "stat-conversions"
+    },
+    {
+      title: "Active Users",
+      value: stats.active_users.toLocaleString(),
+      change: `+${stats.users_change}% this week`,
+      changeColor: "#22C55E",
+      icon: Users,
+      color: "#6B95FF",
+      testid: "stat-users"
     },
     {
       title: "Revenue",
       value: `$${stats.revenue.toLocaleString()}`,
+      change: `+$${stats.revenue_change.toLocaleString()} this month`,
+      changeColor: "#22C55E",
       icon: DollarSign,
       color: "#22C55E",
       testid: "stat-revenue"
@@ -85,153 +93,243 @@ export default function Dashboard() {
   }));
 
   return (
-    <div className="space-y-6 page-enter" data-testid="dashboard">
+    <motion.div 
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ duration: 0.3 }}
+      className="space-y-6" 
+      data-testid="dashboard"
+    >
+      {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {statCards.map((stat, index) => {
           const Icon = stat.icon;
           return (
-            <Card key={index} 
-                  className="stat-card-hover card-themed animate-fadeIn" 
-                  style={{ animationDelay: `${index * 0.1}s`, animationFillMode: 'both' }}
-                  data-testid={stat.testid}>
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium text-muted-themed">
-                  {stat.title}
-                </CardTitle>
-                <div
-                  className="w-10 h-10 rounded-md flex items-center justify-center transition-transform duration-300 hover:scale-110"
-                  style={{ backgroundColor: `${stat.color}20` }}
-                >
-                  <Icon size={20} style={{ color: stat.color }} />
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold font-mono">{stat.value}</div>
-                {stat.title === "Conversions" && (
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {stats.conversion_rate}% conversion rate
+            <motion.div
+              key={index}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.1, duration: 0.4 }}
+              whileHover={{ scale: 1.05, y: -5 }}
+            >
+              <Card 
+                className="transition-all duration-300 cursor-pointer"
+                style={{ 
+                  background: 'rgba(0, 0, 0, 0.4)',
+                  backdropFilter: 'blur(12px)',
+                  border: '1px solid rgba(79, 127, 255, 0.3)',
+                  boxShadow: '0 4px 20px rgba(0, 0, 0, 0.5)'
+                }}
+                data-testid={stat.testid}
+              >
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-sm font-medium text-gray-300">
+                    {stat.title}
+                  </CardTitle>
+                  <motion.div
+                    whileHover={{ scale: 1.2, rotate: 5 }}
+                    className="w-10 h-10 rounded-lg flex items-center justify-center"
+                    style={{ 
+                      background: `linear-gradient(135deg, ${stat.color}30, ${stat.color}10)`,
+                      border: `1px solid ${stat.color}40`
+                    }}
+                  >
+                    <Icon size={20} style={{ color: stat.color }} />
+                  </motion.div>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold text-white mb-1">{stat.value}</div>
+                  <p className="text-xs" style={{ color: stat.changeColor }}>
+                    {stat.change}
                   </p>
-                )}
-                {stat.title === "Revenue" && (
-                  <p className="text-xs text-muted-foreground mt-1">
-                    ${stats.epc} EPC
-                  </p>
-                )}
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            </motion.div>
           );
         })}
       </div>
 
+      {/* Charts Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card className="card-hover card-themed animate-fadeIn" style={{ animationDelay: '0.5s', animationFillMode: 'both' }} data-testid="clicks-chart">
-          <CardHeader>
-            <CardTitle className="text-lg text-themed">Clicks Over Time</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={stats.clicks_by_date}>
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--brand-border)" />
-                <XAxis dataKey="date" stroke="var(--brand-muted)" style={{ fontSize: 12 }} />
-                <YAxis stroke="var(--brand-muted)" style={{ fontSize: 12 }} />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: 'var(--brand-card)',
-                    border: '1px solid var(--brand-border)',
-                    borderRadius: '6px',
-                    color: 'var(--brand-text)'
-                  }}
-                />
-                <Line type="monotone" dataKey="count" stroke="#3B82F6" strokeWidth={2} dot={{ fill: '#3B82F6' }} />
-              </LineChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
+        {/* Clicks Chart */}
+        <motion.div
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.5, duration: 0.4 }}
+        >
+          <Card 
+            style={{ 
+              background: 'rgba(0, 0, 0, 0.4)',
+              backdropFilter: 'blur(12px)',
+              border: '1px solid rgba(79, 127, 255, 0.2)',
+            }}
+            data-testid="clicks-chart"
+          >
+            <CardHeader>
+              <CardTitle className="text-lg text-white">Clicks Over Time</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={300}>
+                <LineChart data={stats.clicks_by_date}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(79, 127, 255, 0.1)" />
+                  <XAxis dataKey="date" stroke="#6B7280" style={{ fontSize: 12 }} />
+                  <YAxis stroke="#6B7280" style={{ fontSize: 12 }} />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: 'rgba(0, 0, 0, 0.9)',
+                      border: '1px solid rgba(79, 127, 255, 0.3)',
+                      borderRadius: '8px',
+                      color: '#FFFFFF'
+                    }}
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="count" 
+                    stroke="#4F7FFF" 
+                    strokeWidth={3} 
+                    dot={{ fill: '#4F7FFF', r: 4 }}
+                    activeDot={{ r: 6 }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        </motion.div>
 
-        <Card className="card-hover card-themed animate-fadeIn" style={{ animationDelay: '0.6s', animationFillMode: 'both' }} data-testid="revenue-chart">
-          <CardHeader>
-            <CardTitle className="text-lg text-themed">Revenue Over Time</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={stats.revenue_by_date}>
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--brand-border)" />
-                <XAxis dataKey="date" stroke="var(--brand-muted)" style={{ fontSize: 12 }} />
-                <YAxis stroke="var(--brand-muted)" style={{ fontSize: 12 }} />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: 'var(--brand-card)',
-                    border: '1px solid var(--brand-border)',
-                    borderRadius: '6px',
-                    color: 'var(--brand-text)'
-                  }}
-                />
-                <Line type="monotone" dataKey="revenue" stroke="#22C55E" strokeWidth={2} dot={{ fill: '#22C55E' }} />
-              </LineChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
+        {/* Revenue Chart */}
+        <motion.div
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.6, duration: 0.4 }}
+        >
+          <Card 
+            style={{ 
+              background: 'rgba(0, 0, 0, 0.4)',
+              backdropFilter: 'blur(12px)',
+              border: '1px solid rgba(79, 127, 255, 0.2)',
+            }}
+            data-testid="revenue-chart"
+          >
+            <CardHeader>
+              <CardTitle className="text-lg text-white">Revenue Over Time</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={300}>
+                <LineChart data={stats.revenue_by_date}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(79, 127, 255, 0.1)" />
+                  <XAxis dataKey="date" stroke="#6B7280" style={{ fontSize: 12 }} />
+                  <YAxis stroke="#6B7280" style={{ fontSize: 12 }} />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: 'rgba(0, 0, 0, 0.9)',
+                      border: '1px solid rgba(79, 127, 255, 0.3)',
+                      borderRadius: '8px',
+                      color: '#FFFFFF'
+                    }}
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="revenue" 
+                    stroke="#22C55E" 
+                    strokeWidth={3} 
+                    dot={{ fill: '#22C55E', r: 4 }}
+                    activeDot={{ r: 6 }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        </motion.div>
       </div>
 
+      {/* Bottom Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card className="card-hover card-themed animate-fadeIn" style={{ animationDelay: '0.7s', animationFillMode: 'both' }} data-testid="country-chart">
-          <CardHeader>
-            <CardTitle className="text-lg text-themed">Top Countries</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={stats.clicks_by_country}>
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--brand-border)" />
-                <XAxis dataKey="country" stroke="var(--brand-muted)" style={{ fontSize: 12 }} />
-                <YAxis stroke="var(--brand-muted)" style={{ fontSize: 12 }} />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: 'var(--brand-card)',
-                    border: '1px solid var(--brand-border)',
-                    borderRadius: '6px',
-                    color: 'var(--brand-text)'
-                  }}
-                />
-                <Bar dataKey="count" fill="#3B82F6" />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
+        {/* Countries Chart */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.7, duration: 0.4 }}
+        >
+          <Card 
+            style={{ 
+              background: 'rgba(0, 0, 0, 0.4)',
+              backdropFilter: 'blur(12px)',
+              border: '1px solid rgba(79, 127, 255, 0.2)',
+            }}
+            data-testid="country-chart"
+          >
+            <CardHeader>
+              <CardTitle className="text-lg text-white">Top Countries</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={stats.clicks_by_country}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(79, 127, 255, 0.1)" />
+                  <XAxis dataKey="country" stroke="#6B7280" style={{ fontSize: 12 }} />
+                  <YAxis stroke="#6B7280" style={{ fontSize: 12 }} />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: 'rgba(0, 0, 0, 0.9)',
+                      border: '1px solid rgba(79, 127, 255, 0.3)',
+                      borderRadius: '8px',
+                      color: '#FFFFFF'
+                    }}
+                  />
+                  <Bar dataKey="count" fill="#4F7FFF" radius={[8, 8, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        </motion.div>
 
-        <Card className="card-hover card-themed animate-fadeIn" style={{ animationDelay: '0.8s', animationFillMode: 'both' }} data-testid="device-chart">
-          <CardHeader>
-            <CardTitle className="text-lg text-themed">Device Breakdown</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <PieChart>
-                <Pie
-                  data={deviceData}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                  outerRadius={100}
-                  fill="#8884d8"
-                  dataKey="value"
-                >
-                  {deviceData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: 'var(--brand-card)',
-                    border: '1px solid var(--brand-border)',
-                    borderRadius: '6px',
-                    color: 'var(--brand-text)'
-                  }}
-                />
-              </PieChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
+        {/* Device Chart */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.8, duration: 0.4 }}
+        >
+          <Card 
+            style={{ 
+              background: 'rgba(0, 0, 0, 0.4)',
+              backdropFilter: 'blur(12px)',
+              border: '1px solid rgba(79, 127, 255, 0.2)',
+            }}
+            data-testid="device-chart"
+          >
+            <CardHeader>
+              <CardTitle className="text-lg text-white">Device Breakdown</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={300}>
+                <PieChart>
+                  <Pie
+                    data={deviceData}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                    outerRadius={100}
+                    fill="#8884d8"
+                    dataKey="value"
+                  >
+                    {deviceData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: 'rgba(0, 0, 0, 0.9)',
+                      border: '1px solid rgba(79, 127, 255, 0.3)',
+                      borderRadius: '8px',
+                      color: '#FFFFFF'
+                    }}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        </motion.div>
       </div>
-    </div>
+    </motion.div>
   );
 }
