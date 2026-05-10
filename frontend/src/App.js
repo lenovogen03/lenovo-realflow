@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import "./App.css";
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
+import { AnimatePresence } from "framer-motion";
+import { PageTransition } from "./components/PageTransitions";
 import LoginPage from "./pages/LoginPage";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
@@ -35,6 +37,11 @@ import AnimationDemoPage from "./pages/AnimationDemoPage";
 import { Toaster } from "./components/ui/sonner";
 import { BrandingProvider } from "./context/BrandingContext";
 import { ThemeProvider } from "./context/ThemeContext";
+
+// Apply blue theme to body
+if (typeof document !== 'undefined') {
+  document.body.classList.add('blue-theme');
+}
 
 function PrivateRoute({ children }) {
   const token = localStorage.getItem("token");
