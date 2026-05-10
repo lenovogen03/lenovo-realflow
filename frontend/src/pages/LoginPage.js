@@ -4,7 +4,7 @@ import axios from "axios";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { toast } from "sonner";
-import { Eye, EyeOff, CheckCircle2 } from "lucide-react";
+import { Eye, EyeOff } from "lucide-react";
 import { useBranding } from "../context/BrandingContext";
 import ThemeToggle from "../components/ThemeToggle";
 
@@ -114,7 +114,7 @@ export default function LoginPage() {
   const navigate = useNavigate();
   const { branding } = useBranding();
   const [showPassword, setShowPassword] = useState(false);
-  const [activeTab, setActiveTab] = useState("account");
+  const [activeTab, setActiveTab] = useState("login");
   const [loginForm, setLoginForm] = useState({ email: "", password: "" });
   const [registerForm, setRegisterForm] = useState({ email: "", password: "", name: "" });
   const [loading, setLoading] = useState(false);
@@ -201,34 +201,32 @@ export default function LoginPage() {
               <p className="text-gray-400 text-sm">Let's get you back into your account.</p>
             </div>
 
-            {/* Tabs */}
+            {/* Tabs - Simple Login/Register */}
             <div className="flex gap-2 mb-6">
               <button
-                onClick={() => setActiveTab("account")}
+                onClick={() => setActiveTab("login")}
                 className={`flex-1 py-3 px-4 rounded-xl font-medium transition-all duration-300 ${
-                  activeTab === "account"
+                  activeTab === "login"
                     ? "bg-[#4F7FFF] text-white shadow-lg shadow-blue-500/50"
                     : "bg-gray-900 text-gray-400 hover:bg-gray-800"
                 }`}
               >
-                <div>Account</div>
-                <p className="text-xs opacity-70 mt-1">Sign in as account owner</p>
+                Login
               </button>
               <button
-                onClick={() => setActiveTab("assistant")}
+                onClick={() => setActiveTab("register")}
                 className={`flex-1 py-3 px-4 rounded-xl font-medium transition-all duration-300 ${
-                  activeTab === "assistant"
+                  activeTab === "register"
                     ? "bg-[#4F7FFF] text-white shadow-lg shadow-blue-500/50"
                     : "bg-gray-900 text-gray-400 hover:bg-gray-800"
                 }`}
               >
-                <div>Virtual Assistant</div>
-                <p className="text-xs opacity-70 mt-1">Sign in as virtual assistant</p>
+                Register
               </button>
             </div>
 
             {/* Login Form */}
-            {activeTab === "account" ? (
+            {activeTab === "login" ? (
               <form onSubmit={handleLogin} className="space-y-4">
                 <div className="space-y-2">
                   <Input
@@ -261,35 +259,18 @@ export default function LoginPage() {
                   </button>
                 </div>
 
-                {/* Captcha Success */}
-                <div className="flex items-center gap-2 bg-gray-900 rounded-xl p-4">
-                  <CheckCircle2 className="text-green-500" size={24} />
-                  <span className="text-white text-sm">Success!</span>
-                  <div className="ml-auto">
-                    <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='50' height='20'%3E%3Ctext x='0' y='15' font-size='12' fill='%23666'%3ECaptcha%3C/text%3E%3C/svg%3E" alt="captcha" />
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between text-sm">
+                <div className="flex items-center justify-between text-sm mt-4">
                   <Link to="/forgot-password" className="text-gray-400 hover:text-[#4F7FFF] transition">
                     Forgot password?
                   </Link>
-                  <div className="flex gap-2">
-                    <button
-                      type="button"
-                      className="px-6 py-3 rounded-full border border-gray-600 text-white hover:bg-gray-800 transition"
-                    >
-                      Sign up
-                    </button>
-                    <button
-                      type="submit"
-                      disabled={loading}
-                      className="px-8 py-3 rounded-full bg-gradient-to-r from-[#4F7FFF] to-[#3D66D9] text-white hover:shadow-lg hover:shadow-blue-500/50 transition-all disabled:opacity-50"
-                      data-testid="login-submit-button"
-                    >
-                      {loading ? "Signing in..." : "Sign In →"}
-                    </button>
-                  </div>
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="px-8 py-3 rounded-full bg-gradient-to-r from-[#4F7FFF] to-[#3D66D9] text-white hover:shadow-lg hover:shadow-blue-500/50 transition-all disabled:opacity-50"
+                    data-testid="login-submit-button"
+                  >
+                    {loading ? "Signing in..." : "Sign In →"}
+                  </button>
                 </div>
 
                 <div className="relative my-6">
@@ -363,11 +344,6 @@ export default function LoginPage() {
               </form>
             )}
           </div>
-
-          <p className="text-center text-gray-500 text-xs mt-4">
-            Activate Windows<br/>
-            Go to Settings to activate Windows
-          </p>
         </div>
       </div>
     </div>
