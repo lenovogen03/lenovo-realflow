@@ -4442,8 +4442,8 @@ async def rut_create_job(
     # 2. Numeric validations (fast)
     if total_clicks < 1 or total_clicks > 100000:
         raise HTTPException(status_code=400, detail="total_clicks must be 1..100000")
-    if concurrency < 1 or concurrency > 20:
-        raise HTTPException(status_code=400, detail="concurrency must be 1..20")
+    if concurrency < 1 or concurrency > 50:
+        raise HTTPException(status_code=400, detail="concurrency must be 1..50")
     if duration_minutes < 0 or duration_minutes > 1440:
         raise HTTPException(status_code=400, detail="duration_minutes must be 0..1440")
 
@@ -8461,7 +8461,7 @@ async def send_real_traffic(
         raise HTTPException(status_code=400, detail="At least one proxy is required")
     if not payload.user_agents:
         raise HTTPException(status_code=400, detail="At least one user agent is required")
-    concurrency = max(1, min(int(payload.concurrency or 3), 20))
+    concurrency = max(1, min(int(payload.concurrency or 3), 50))
 
     # Validate link ownership
     link = await db.links.find_one({"id": payload.link_id, "user_id": user["id"]}, {"_id": 0})
