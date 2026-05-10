@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
+import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
 import { MousePointerClick, TrendingUp, DollarSign, Users } from "lucide-react";
@@ -7,7 +8,7 @@ import { MousePointerClick, TrendingUp, DollarSign, Users } from "lucide-react";
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
-const COLORS = ['#3B82F6', '#22C55E', '#F59E0B', '#EF4444', '#A855F7'];
+const COLORS = ['#4F7FFF', '#3D66D9', '#6B95FF', '#22C55E', '#F59E0B'];
 
 export default function Dashboard() {
   const [stats, setStats] = useState(null);
@@ -34,7 +35,7 @@ export default function Dashboard() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full">
-        <div className="text-muted-foreground">Loading dashboard...</div>
+        <div className="text-white">Loading dashboard...</div>
       </div>
     );
   }
@@ -42,7 +43,7 @@ export default function Dashboard() {
   if (!stats) {
     return (
       <div className="flex items-center justify-center h-full">
-        <div className="text-muted-foreground">No data available</div>
+        <div className="text-gray-400">No data available</div>
       </div>
     );
   }
