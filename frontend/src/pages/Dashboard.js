@@ -51,8 +51,8 @@ export default function Dashboard() {
   const statCards = [
     {
       title: "Total Clicks",
-      value: stats.total_clicks.toLocaleString(),
-      change: `+${stats.clicks_change}% from last month`,
+      value: (stats.total_clicks || 0).toLocaleString(),
+      change: `+${stats.clicks_change || 0}% from last month`,
       changeColor: "#22C55E",
       icon: MousePointerClick,
       color: "#4F7FFF",
@@ -60,8 +60,8 @@ export default function Dashboard() {
     },
     {
       title: "Conversions",
-      value: stats.total_conversions.toLocaleString(),
-      change: `${stats.conversion_rate}% conversion rate`,
+      value: (stats.total_conversions || 0).toLocaleString(),
+      change: `${stats.conversion_rate || 0}% conversion rate`,
       changeColor: "#22C55E",
       icon: TrendingUp,
       color: "#3D66D9",
@@ -69,8 +69,8 @@ export default function Dashboard() {
     },
     {
       title: "Active Users",
-      value: stats.active_users.toLocaleString(),
-      change: `+${stats.users_change}% this week`,
+      value: (stats.active_users || 0).toLocaleString(),
+      change: `+${stats.users_change || 0}% this week`,
       changeColor: "#22C55E",
       icon: Users,
       color: "#6B95FF",
@@ -78,8 +78,8 @@ export default function Dashboard() {
     },
     {
       title: "Revenue",
-      value: `$${stats.revenue.toLocaleString()}`,
-      change: `+$${stats.revenue_change.toLocaleString()} this month`,
+      value: `$${(stats.revenue || 0).toLocaleString()}`,
+      change: `+$${(stats.revenue_change || 0).toLocaleString()} this month`,
       changeColor: "#22C55E",
       icon: DollarSign,
       color: "#22C55E",
@@ -87,7 +87,7 @@ export default function Dashboard() {
     },
   ];
 
-  const deviceData = stats.clicks_by_device.map(item => ({
+  const deviceData = (stats.clicks_by_device || []).map(item => ({
     name: item.device.charAt(0).toUpperCase() + item.device.slice(1),
     value: item.count
   }));
@@ -170,7 +170,7 @@ export default function Dashboard() {
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={stats.clicks_by_date}>
+                <LineChart data={stats.clicks_by_date || []}>
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(79, 127, 255, 0.1)" />
                   <XAxis dataKey="date" stroke="#6B7280" style={{ fontSize: 12 }} />
                   <YAxis stroke="#6B7280" style={{ fontSize: 12 }} />
@@ -215,7 +215,7 @@ export default function Dashboard() {
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={stats.revenue_by_date}>
+                <LineChart data={stats.revenue_by_date || []}>
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(79, 127, 255, 0.1)" />
                   <XAxis dataKey="date" stroke="#6B7280" style={{ fontSize: 12 }} />
                   <YAxis stroke="#6B7280" style={{ fontSize: 12 }} />
@@ -263,7 +263,7 @@ export default function Dashboard() {
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={stats.clicks_by_country}>
+                <BarChart data={stats.clicks_by_country || []}>
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(79, 127, 255, 0.1)" />
                   <XAxis dataKey="country" stroke="#6B7280" style={{ fontSize: 12 }} />
                   <YAxis stroke="#6B7280" style={{ fontSize: 12 }} />
