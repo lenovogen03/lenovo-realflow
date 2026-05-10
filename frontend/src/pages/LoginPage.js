@@ -11,7 +11,7 @@ import ThemeToggle from "../components/ThemeToggle";
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
-// Wavy lines animation component - Smooth cursor-following waves
+// Vertical flowing lines animation - Like fiber optic curtain
 const WavyBackground = ({ mousePosition }) => {
   const canvasRef = useRef(null);
 
@@ -27,20 +27,27 @@ const WavyBackground = ({ mousePosition }) => {
     setCanvasSize();
     window.addEventListener('resize', setCanvasSize);
 
-    // Create more waves for denser pattern
-    const waves = [];
-    const waveCount = 25; // Increased for more lines
+    // Create vertical flowing lines
+    const lines = [];
+    const lineCount = 150; // Dense lines like in image
     
-    for (let i = 0; i < waveCount; i++) {
-      waves.push({
-        baseY: (canvas.height / waveCount) * i,
-        amplitude: 30 + Math.random() * 20,
-        frequency: 0.002 + Math.random() * 0.001,
-        speed: 0.3 + Math.random() * 0.2,
+    for (let i = 0; i < lineCount; i++) {
+      const startX = (canvas.width / lineCount) * i;
+      lines.push({
+        points: [],
+        baseX: startX,
+        amplitude: 30 + Math.random() * 50, // Horizontal wave amplitude
+        frequency: 0.003 + Math.random() * 0.002,
+        speed: 0.2 + Math.random() * 0.3,
         phase: Math.random() * Math.PI * 2,
-        currentMouseInfluence: 0,
-        targetMouseInfluence: 0
+        opacity: 0.1 + Math.random() * 0.3,
+        mouseInfluence: 0
       });
+      
+      // Initialize points for each line from top to bottom
+      for (let y = 0; y <= canvas.height; y += 5) {
+        lines[i].points.push({ y, x: 0 });
+      }
     }
 
     let animationFrameId;
@@ -50,42 +57,35 @@ const WavyBackground = ({ mousePosition }) => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       time += 0.01;
 
-      waves.forEach((wave, index) => {
-        // Smooth cursor influence with easing
-        const distanceY = Math.abs(wave.baseY - mousePosition.y);
-        const distanceX = Math.abs(canvas.width / 2 - mousePosition.x);
-        const totalDistance = Math.sqrt(distanceY * distanceY + distanceX * distanceX);
-        
-        // Calculate target influence based on distance
-        wave.targetMouseInfluence = Math.max(0, (300 - totalDistance) / 300);
-        
-        // Smooth transition (easing)
-        wave.currentMouseInfluence += (wave.targetMouseInfluence - wave.currentMouseInfluence) * 0.1;
+      lines.forEach((line) => {
+        // Calculate mouse influence for this line
+        const distanceX = Math.abs(line.baseX - mousePosition.x);
+        const targetInfluence = Math.max(0, (400 - distanceX) / 400);
+        line.mouseInfluence += (targetInfluence - line.mouseInfluence) * 0.1;
 
         ctx.beginPath();
-        // Varying opacity based on position for depth
-        const opacity = 0.15 + (index % 3) * 0.05;
-        ctx.strokeStyle = `rgba(79, 127, 255, ${opacity})`;
-        ctx.lineWidth = 0.8;
+        ctx.strokeStyle = `rgba(79, 127, 255, ${line.opacity})`;
+        ctx.lineWidth = 1.2;
 
-        // Draw smooth wavy line
-        for (let x = 0; x <= canvas.width; x += 3) {
-          // Multiple sine waves for organic feel
-          const baseWave = Math.sin(x * wave.frequency + time * wave.speed + wave.phase) * wave.amplitude;
-          const secondaryWave = Math.sin(x * wave.frequency * 1.5 + time * wave.speed * 0.7) * (wave.amplitude * 0.3);
+        // Draw vertical line with horizontal waves
+        line.points.forEach((point, index) => {
+          // Wave calculation for horizontal displacement
+          const wave1 = Math.sin(point.y * line.frequency + time * line.speed + line.phase) * line.amplitude;
+          const wave2 = Math.sin(point.y * line.frequency * 0.5 + time * line.speed * 0.7) * (line.amplitude * 0.4);
           
-          // Cursor influence - pulls waves toward cursor
-          const xInfluence = ((mousePosition.x - x) / canvas.width) * 100 * wave.currentMouseInfluence;
-          const yInfluence = ((mousePosition.y - wave.baseY) / canvas.height) * 80 * wave.currentMouseInfluence;
+          // Mouse influence - pull lines toward cursor
+          const distanceY = Math.abs(point.y - mousePosition.y);
+          const totalDistance = Math.sqrt(distanceX * distanceX + distanceY * distanceY);
+          const mouseEffect = Math.max(0, (300 - totalDistance) / 300) * 100 * line.mouseInfluence;
           
-          const y = wave.baseY + baseWave + secondaryWave + yInfluence + xInfluence * 0.3;
+          const x = line.baseX + wave1 + wave2 + mouseEffect;
           
-          if (x === 0) {
-            ctx.moveTo(x, y);
+          if (index === 0) {
+            ctx.moveTo(x, point.y);
           } else {
-            ctx.lineTo(x, y);
+            ctx.lineTo(x, point.y);
           }
-        }
+        });
         
         ctx.stroke();
       });
